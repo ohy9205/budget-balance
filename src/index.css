@@ -154,76 +154,81 @@ body {
 }
 
 /* ── 설정 화면 ────────────────────────────────────────── */
+/* 전체 화면 페이지라 TDS Modal(고정폭 카드) 대신 직접 그린다.
+   z-index는 TDS 오버레이보다 낮게 둬서 확인 다이얼로그가 이 패널 위에 오게 한다. */
 .settings-panel {
   position: fixed;
   inset: 0;
-  z-index: 100;
+  z-index: 9999;
   display: flex;
   flex-direction: column;
-  width: 100%;
-  max-width: 460px;
-  margin: 0 auto;
   background: var(--adaptiveBackground);
 }
 
 .settings-body {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  padding: 0 24px 48px;
+  padding-bottom: 48px;
+}
+
+/* TDS ListHeader / ListRow는 좌우 여백을 스스로 갖지만 TextField·Button은
+   없으므로, 직접 조립한 블록에만 같은 여백을 맞춰 준다 */
+.data-btns,
+.settings-note {
+  padding-left: 24px;
+  padding-right: 24px;
 }
 
 .cat-edit-list {
   display: flex;
   flex-direction: column;
+  padding-left: 4px;
+  padding-right: 18px;
 }
 
-.cat-edit {
+.add-fields {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding-bottom: 16px;
+  padding: 0 18px;
 }
 
-.cat-edit-head {
+/* 왼쪽 폼 / 오른쪽 조작 버튼 2단 */
+.cat-edit-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 20px;
 }
 
-.cat-edit-head > *:first-child {
+.cat-edit-fields {
   flex: 1;
   min-width: 0;
 }
 
-.cat-edit-nums {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-}
-
+/* 순서 이동 그룹과 초기화·삭제 그룹을 폼 높이에 맞춰 위아래 끝으로 벌린다 */
 .cat-edit-actions {
   display: flex;
-  align-items: center;
-  gap: 8px;
+  flex-direction: column;
+  justify-content: space-between;
+  align-self: stretch;
+  flex-shrink: 0;
+  padding: 0 0 10px;
 }
 
-.cat-edit-actions > *:last-child {
-  margin-left: auto;
+.cat-edit-actions-group {
+  display: flex;
+  flex-direction: column;
 }
 
 .settings-group {
   margin-top: 16px;
 }
 
-.add-fields,
 .data-btns {
   display: flex;
   flex-direction: column;
   gap: 8px;
-}
-
-.data-btns {
   margin-bottom: 12px;
 }
 
