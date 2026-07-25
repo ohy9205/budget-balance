@@ -33,10 +33,8 @@ function Dashboard() {
   const [showSettings, setShowSettings] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Expense | null>(null);
 
-  // 지출 입력 시 기본 날짜: 현재 월이면 오늘, 아니면 해당 월 1일
+  // 지출 입력 기본 날짜: 현재 월이면 오늘, 아니면 해당 월 1일
   const defaultDate = isCurrentMonth(currentMonth) ? getDateKey() : `${currentMonth}-01`;
-
-  const closeExpenseModal = () => setExpenseModal({ mode: "closed" });
 
   const handleSubmitExpense = (input: NewExpenseInput) => {
     if (expenseModal.mode === "edit") {
@@ -46,30 +44,48 @@ function Dashboard() {
     }
   };
 
+  const stats = monthData ? allCategoryStats(monthData) : [];
+
   return (
-    <div className="app">
-      <header className="app-bar">
-        <MonthSelector />
-        <button
-          type="button"
-          className="btn btn-sm"
-          onClick={() => setShowSettings(true)}
-          disabled={!monthData}
-        >
-          설정
-        </button>
-      </header>
+    <div className="app-shell">
+      <div className="sticky-head">
+        <div className="topbar">
+          <MonthSelector />
+          <div className="topbar-actions">
+            {monthData && (
+              <button
+                type="button"
+                className="head-add"
+                onClick={() => setExpenseModal({ mode: "add" })}
+                aria-label="지출 추가"
+                title="지출 추가"
+              >
+                <span aria-hidden="true">+</span>
+              </button>
+            )}
+            <button
+              type="button"
+              className="link-btn"
+              onClick={() => setShowSettings(true)}
+              disabled={!monthData}
+            >
+              설정
+            </button>
+          </div>
+        </div>
+        {monthData && <SummaryCard data={monthData} />}
+      </div>
 
       {!monthData ? (
         <section className="empty-month">
           <p>{getMonthKey() === currentMonth ? "이번 달" : "이 달"} 예산이 아직 없습니다.</p>
           <div className="empty-actions">
-            <button type="button" className="btn btn-primary" onClick={createEmptyMonthFromSeed}>
+            <button type="button" className="add-btn" onClick={createEmptyMonthFromSeed}>
               기본 예산으로 생성
             </button>
             <button
               type="button"
-              className="btn"
+              className="data-btn"
               onClick={copyFromPreviousMonth}
               disabled={!previousMonthWithData}
             >
@@ -80,16 +96,17 @@ function Dashboard() {
           </div>
         </section>
       ) : (
-        <main className="dashboard">
-          <SummaryCard data={monthData} />
-
+        <>
           <section aria-label="예산 항목">
-            <h2 className="section-title">예산 항목</h2>
-            <div className="category-grid">
-              {allCategoryStats(monthData).map((stats) => (
+            <div className="section-head">
+              <span className="section-title">예산 항목</span>
+              <span className="section-note">{monthData.categories.length}개 항목</span>
+            </div>
+            <div className="list-block cats">
+              {stats.map((s) => (
                 <CategoryCard
-                  key={stats.category.id}
-                  stats={stats}
+                  key={s.category.id}
+                  stats={s}
                   onAddExpense={(categoryId) => setExpenseModal({ mode: "add", categoryId })}
                 />
               ))}
@@ -100,35 +117,25 @@ function Dashboard() {
             expenses={monthData.expenses}
             categories={monthData.categories}
             onEdit={(expense) => setExpenseModal({ mode: "edit", expense })}
-            onDelete={(expense) => setDeleteTarget(expense)}
           />
-        </main>
-      )}
-
-      {monthData && (
-        <button
-          type="button"
-          className="fab"
-          onClick={() => setExpenseModal({ mode: "add" })}
-          aria-label="지출 추가"
-        >
-          + 지출 추가
-        </button>
+        </>
       )}
 
       {expenseModal.mode !== "closed" && monthData && (
         <QuickExpenseForm
           categories={monthData.categories}
           defaultCategoryId={
-            expenseModal.mode === "add"
-              ? expenseModal.categoryId ?? prefs.lastCategoryId
-              : undefined
+            expenseModal.mode === "add" ? expenseModal.categoryId ?? prefs.lastCategoryId : undefined
           }
           defaultPaymentMethod={prefs.lastPaymentMethod}
           defaultDate={defaultDate}
           editing={expenseModal.mode === "edit" ? expenseModal.expense : undefined}
           onSubmit={handleSubmitExpense}
-          onClose={closeExpenseModal}
+          onRequestDelete={(expense) => {
+            setExpenseModal({ mode: "closed" });
+            setDeleteTarget(expense);
+          }}
+          onClose={() => setExpenseModal({ mode: "closed" })}
         />
       )}
 

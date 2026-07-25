@@ -56,6 +56,8 @@ export interface BudgetContextValue {
   updateCategory: (id: string, patch: Partial<Omit<BudgetCategory, "id">>) => void;
   deleteCategory: (id: string) => void;
   moveCategory: (id: string, direction: "up" | "down") => void;
+  /** 항목은 유지한 채 이 달의 해당 항목 지출만 모두 삭제 */
+  resetCategoryExpenses: (id: string) => void;
 
   resetCurrentMonth: () => void;
   exportStore: () => BudgetStore;
@@ -247,6 +249,17 @@ export function BudgetProvider({ children }: { children: ReactNode }) {
     [mutateMonth],
   );
 
+  const resetCategoryExpenses = useCallback(
+    (id: string) => {
+      // 예산 설정(이름/월 예산/목표액)은 그대로 두고 사용액만 0으로 되돌린다
+      mutateMonth((data) => ({
+        ...data,
+        expenses: data.expenses.filter((e) => e.categoryId !== id),
+      }));
+    },
+    [mutateMonth],
+  );
+
   const resetCurrentMonth = useCallback(() => {
     setStore((prev) => {
       const next = { ...prev.months };
@@ -277,6 +290,7 @@ export function BudgetProvider({ children }: { children: ReactNode }) {
     updateCategory,
     deleteCategory,
     moveCategory,
+    resetCategoryExpenses,
     resetCurrentMonth,
     exportStore,
     importStore,

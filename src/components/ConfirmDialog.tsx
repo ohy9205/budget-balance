@@ -1,3 +1,4 @@
+import { useId } from "react";
 import { Modal } from "./Modal";
 
 interface ConfirmDialogProps {
@@ -20,26 +21,26 @@ export function ConfirmDialog({
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
+  const titleId = useId();
+
   return (
-    <Modal
-      title={title}
-      onClose={onCancel}
-      footer={
-        <>
-          <button type="button" className="btn" onClick={onCancel}>
-            {cancelLabel}
-          </button>
-          <button
-            type="button"
-            className={danger ? "btn btn-danger" : "btn btn-primary"}
-            onClick={onConfirm}
-          >
-            {confirmLabel}
-          </button>
-        </>
-      }
-    >
-      <p className="confirm-message">{message}</p>
+    <Modal variant="center" labelledBy={titleId} onClose={onCancel} className="confirm">
+      <div className="confirm-title" id={titleId}>
+        {title}
+      </div>
+      <p className="confirm-msg">{message}</p>
+      <div className="confirm-actions">
+        <button type="button" className="confirm-cancel" onClick={onCancel}>
+          {cancelLabel}
+        </button>
+        <button
+          type="button"
+          className={`confirm-ok ${danger ? "danger" : ""}`}
+          onClick={onConfirm}
+        >
+          {confirmLabel}
+        </button>
+      </div>
     </Modal>
   );
 }

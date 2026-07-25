@@ -1,7 +1,6 @@
-import { useMemo, useState, type FormEvent } from "react";
+import { useId, useMemo, useState } from "react";
 import type { BudgetCategory, Expense, PaymentMethod } from "../types";
 import type { NewExpenseInput } from "../context/BudgetContext";
-import { PAYMENT_METHODS } from "../constants";
 import { Modal } from "./Modal";
 
 interface QuickExpenseFormProps {
@@ -9,12 +8,17 @@ interface QuickExpenseFormProps {
   defaultCategoryId?: string;
   defaultPaymentMethod?: PaymentMethod;
   defaultDate: string;
-  /** 수정 모드일 때 기존 지출 */
+  /** 지정하면 수정 모드 — 값이 채워진 채로 열리고 날짜·메모는 원본을 유지한다. */
   editing?: Expense;
   onSubmit: (input: NewExpenseInput) => void;
+  /** 수정 모드의 삭제 버튼. 호출부가 확인 다이얼로그를 띄운다. */
+  onRequestDelete?: (expense: Expense) => void;
   onClose: () => void;
 }
 
+const KEYS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "00", "0", "⌫"] as const;
+
+/** 숫자 키패드 기반 지출 입력 하단 시트(추가·수정 공용). */
 export function QuickExpenseForm({
   categories,
   defaultCategoryId,
@@ -22,160 +26,137 @@ export function QuickExpenseForm({
   defaultDate,
   editing,
   onSubmit,
+  onRequestDelete,
   onClose,
 }: QuickExpenseFormProps) {
+  const titleId = useId();
+
   const sortedCategories = useMemo(
     () => [...categories].sort((a, b) => a.sortOrder - b.sortOrder),
     [categories],
   );
 
   const firstCategoryId = sortedCategories[0]?.id ?? "";
+  const preferredCategoryId = editing?.categoryId ?? defaultCategoryId;
   const initialCategoryId =
-    editing?.categoryId ??
-    (defaultCategoryId && sortedCategories.some((c) => c.id === defaultCategoryId)
-      ? defaultCategoryId
-      : firstCategoryId);
+    preferredCategoryId && sortedCategories.some((c) => c.id === preferredCategoryId)
+      ? preferredCategoryId
+      : firstCategoryId;
 
-  const [amount, setAmount] = useState<string>(editing ? String(editing.amount) : "");
-  const [categoryId, setCategoryId] = useState<string>(initialCategoryId);
+  const [amount, setAmount] = useState(editing ? String(editing.amount) : "");
+  const [categoryId, setCategoryId] = useState(initialCategoryId);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(
     editing?.paymentMethod ?? defaultPaymentMethod ?? "credit",
   );
-  const [date, setDate] = useState<string>(editing?.date ?? defaultDate);
-  const [memo, setMemo] = useState<string>(editing?.memo ?? "");
-  const [error, setError] = useState<string>("");
 
-  const isEditing = Boolean(editing);
+  const activeCatName =
+    sortedCategories.find((c) => c.id === categoryId)?.name ?? "";
+  const amountValue = parseInt(amount || "0", 10);
 
-  const validateAmount = (): number | null => {
-    const trimmed = amount.trim();
-    if (trimmed === "") return null;
-    const num = Number(trimmed);
-    if (!Number.isFinite(num)) return null;
-    if (!Number.isInteger(num)) return null;
-    if (num <= 0) return null;
-    return num;
+  const press = (key: string) => {
+    if (key === "⌫") {
+      setAmount((a) => a.slice(0, -1));
+      return;
+    }
+    setAmount((a) => {
+      if (a.replace(/^0+/, "").length >= 9) return a; // 9자리 초과 방지
+      if (a === "" && key === "00") return a;
+      return a + key;
+    });
   };
 
-  const submit = (e: FormEvent) => {
-    e.preventDefault();
-    const validAmount = validateAmount();
-    if (validAmount === null) {
-      setError("금액은 0보다 큰 정수(원)로 입력해 주세요.");
-      return;
-    }
-    if (!categoryId) {
-      setError("예산 항목을 선택해 주세요.");
-      return;
-    }
-
+  const save = () => {
+    if (!amountValue || amountValue <= 0) return;
+    if (!categoryId) return;
     onSubmit({
       categoryId,
-      amount: validAmount,
+      amount: amountValue,
       paymentMethod,
-      date,
-      memo: memo.trim() || undefined,
+      date: editing?.date ?? defaultDate,
+      memo: editing?.memo,
     });
-
-    if (isEditing) {
-      onClose();
-      return;
-    }
-
-    // 추가 모드: 폼 초기화하되 최근 항목/결제수단은 유지
-    setAmount("");
-    setMemo("");
-    setError("");
+    onClose();
   };
 
   return (
-    <Modal title={isEditing ? "지출 수정" : "빠른 지출 입력"} onClose={onClose}>
-      <form className="expense-form" onSubmit={submit}>
-        <div className="field">
-          <label htmlFor="expense-amount">금액 (원)</label>
-          <input
-            id="expense-amount"
-            type="number"
-            inputMode="numeric"
-            min={1}
-            step={1}
-            placeholder="예: 25000"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            // eslint-disable-next-line jsx-a11y/no-autofocus
-            autoFocus
-          />
+    <Modal variant="sheet" labelledBy={titleId} onClose={onClose}>
+      <div className="sheet-panel">
+        <div className="sheet-head">
+          <span className="sheet-title" id={titleId}>
+            {editing ? "지출 수정" : "지출 추가"} · {activeCatName}
+          </span>
+          <button type="button" className="sheet-close" aria-label="닫기" onClick={onClose}>
+            ✕
+          </button>
         </div>
 
-        <div className="field">
-          <label htmlFor="expense-category">예산 항목</label>
-          <select
-            id="expense-category"
-            value={categoryId}
-            onChange={(e) => setCategoryId(e.target.value)}
+        <div className="amount-display" aria-live="polite">
+          <span className="amount-num">{amountValue.toLocaleString("ko-KR")}</span>
+          <span className="amount-won"> 원</span>
+        </div>
+
+        <div className="pay-row" role="radiogroup" aria-label="결제수단">
+          <button
+            type="button"
+            className={`pay-btn ${paymentMethod === "credit" ? "active" : ""}`}
+            aria-pressed={paymentMethod === "credit"}
+            onClick={() => setPaymentMethod("credit")}
           >
-            {sortedCategories.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div className="field">
-          <span className="field-label">결제수단</span>
-          <div className="radio-row" role="radiogroup" aria-label="결제수단">
-            {PAYMENT_METHODS.map((m) => (
-              <label key={m.value} className={`radio-chip ${paymentMethod === m.value ? "is-active" : ""}`}>
-                <input
-                  type="radio"
-                  name="paymentMethod"
-                  value={m.value}
-                  checked={paymentMethod === m.value}
-                  onChange={() => setPaymentMethod(m.value)}
-                />
-                {m.label}
-              </label>
-            ))}
-          </div>
-        </div>
-
-        <div className="field">
-          <label htmlFor="expense-date">날짜</label>
-          <input
-            id="expense-date"
-            type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-          />
-        </div>
-
-        <div className="field">
-          <label htmlFor="expense-memo">메모 (선택)</label>
-          <input
-            id="expense-memo"
-            type="text"
-            placeholder="간단한 메모"
-            value={memo}
-            onChange={(e) => setMemo(e.target.value)}
-          />
-        </div>
-
-        {error && (
-          <p className="form-error" role="alert">
-            {error}
-          </p>
-        )}
-
-        <div className="form-actions">
-          <button type="button" className="btn" onClick={onClose}>
-            닫기
+            신용카드
           </button>
-          <button type="submit" className="btn btn-primary">
-            {isEditing ? "수정 저장" : "저장"}
+          <button
+            type="button"
+            className={`pay-btn ${paymentMethod === "debit" ? "active" : ""}`}
+            aria-pressed={paymentMethod === "debit"}
+            onClick={() => setPaymentMethod("debit")}
+          >
+            체크카드
           </button>
         </div>
-      </form>
+
+        <div className="chip-row" role="radiogroup" aria-label="예산 항목">
+          {sortedCategories.map((c) => (
+            <button
+              key={c.id}
+              type="button"
+              className={`chip ${c.id === categoryId ? "active" : ""}`}
+              aria-pressed={c.id === categoryId}
+              onClick={() => setCategoryId(c.id)}
+            >
+              {c.name}
+            </button>
+          ))}
+        </div>
+
+        <div className="keypad">
+          {KEYS.map((key) => (
+            <button
+              key={key}
+              type="button"
+              className="key"
+              aria-label={key === "⌫" ? "지우기" : key}
+              onClick={() => press(key)}
+            >
+              {key}
+            </button>
+          ))}
+        </div>
+
+        <div className="sheet-actions">
+          {editing && onRequestDelete && (
+            <button
+              type="button"
+              className="del-btn"
+              onClick={() => onRequestDelete(editing)}
+            >
+              삭제
+            </button>
+          )}
+          <button type="button" className="save-btn" onClick={save} disabled={amountValue <= 0}>
+            {editing ? "저장" : "추가"}
+          </button>
+        </div>
+      </div>
     </Modal>
   );
 }
