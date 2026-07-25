@@ -53,6 +53,7 @@ body {
 body {
   background: var(--frame);
   color: var(--ink);
+  /* font-family: "Inter", system-ui, -apple-system, "Noto Sans KR", sans-serif; */
   font-family: "Archivo", system-ui, -apple-system, "Noto Sans KR", sans-serif;
   font-size: 15px;
   line-height: 1.55;
@@ -675,32 +676,32 @@ button {
   border: none;
   border-radius: 16px;
   box-shadow: 0 2px 10px rgba(32, 30, 29, 0.06);
-  padding: 16px 18px;
+  padding: 12px 18px;
   text-align: right;
   margin-bottom: 12px;
 }
 
 .amount-num {
   font-weight: 800;
-  font-size: 32px;
+  font-size: 28px;
   letter-spacing: -0.02em;
 }
 
 .amount-won {
   font-weight: 600;
-  font-size: 18px;
+  font-size: 14px;
   color: var(--muted);
 }
 
 .pay-row {
   display: flex;
   gap: 8px;
-  margin-bottom: 10px;
+  margin-bottom: 16px;
 }
 
 .pay-btn {
-  flex: 1;
-  padding: 12px 0;
+  /* flex: 1; */
+  padding: 12px 14px;
   border: 1.5px solid var(--line-2);
   border-radius: 14px;
   background: var(--surface);
@@ -756,7 +757,7 @@ button {
   box-shadow: var(--soft-chip);
   font-weight: 700;
   font-size: 20px;
-  padding: 14px 0;
+  padding: 12px 0;
   cursor: pointer;
 }
 
@@ -921,7 +922,17 @@ button {
   gap: 3px;
 }
 
-/* 순서 이동 + 지출 초기화는 입력 아래 한 줄, 삭제는 카드 모서리 배지 */
+/* 기본 예산값과 달라진 설정 안내 (되돌리기 버튼이 활성일 때만 표시) */
+.cat-default-note {
+  margin: 0;
+  font-weight: 400;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--muted-2);
+  word-break: keep-all;
+}
+
+/* 순서 이동 + 기본값 되돌리기는 입력 아래 한 줄, 삭제는 카드 모서리 배지 */
 .cat-edit-actions {
   display: flex;
   gap: 8px;
