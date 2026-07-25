@@ -12,6 +12,24 @@ export function formatPercent(pct: number): string {
   return `${Number.isInteger(rounded) ? rounded : rounded.toFixed(1)}%`;
 }
 
+/** 금액 입력 최대 자릿수 */
+const MAX_AMOUNT_DIGITS = 9;
+
+/** 금액 입력용 정규화 — 숫자만 남기고 앞자리 0과 자릿수 초과분을 정리한다. */
+export function toAmountDigits(raw: string): string {
+  return raw
+    .replace(/\D/g, "")
+    .replace(/^0+(?=\d)/, "")
+    .slice(0, MAX_AMOUNT_DIGITS);
+}
+
+/** 숫자 문자열·숫자 → "1,234" (빈 문자열은 그대로 빈 문자열) */
+export function formatThousands(value: string | number): string {
+  const digits = typeof value === "number" ? String(value) : value;
+  if (digits === "") return "";
+  return Number(digits).toLocaleString("ko-KR");
+}
+
 /** "YYYY-MM-DD" → "M월 D일" */
 export function formatDateLabel(dateKey: string): string {
   const parts = dateKey.split("-").map(Number);
