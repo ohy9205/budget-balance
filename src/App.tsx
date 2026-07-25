@@ -87,7 +87,7 @@ function Dashboard() {
                 display="block"
                 size="xlarge"
                 variant="weak"
-                color="light"
+                color="dark"
                 disabled={!previousMonthWithData}
                 onClick={copyFromPreviousMonth}
               >
@@ -110,7 +110,7 @@ function Dashboard() {
                   <ListHeader.RightText>{`${monthData.categories.length}개 항목`}</ListHeader.RightText>
                 }
               />
-              <div className="list-rows cats">
+              <div className="list-rows">
                 {stats.map((s) => (
                   <CategoryCard
                     key={s.category.id}
