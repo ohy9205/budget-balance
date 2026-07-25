@@ -22,14 +22,14 @@ export interface CategorySeed extends Omit<BudgetCategory, "id" | "seedKey"> {
 export const DEFAULT_CATEGORY_SEED: CategorySeed[] = [
   {
     key: "weekday-meal",
-    name: "평일 만남 식비",
+    name: "평일 데이트",
     monthlyBudget: 270000,
     targetExpenseAmount: 25000,
     sortOrder: 0,
   },
   {
     key: "saturday-date",
-    name: "토요일 데이트",
+    name: "주말 데이트",
     monthlyBudget: 250000,
     targetExpenseAmount: 50000,
     sortOrder: 1,
