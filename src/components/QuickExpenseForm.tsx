@@ -1,4 +1,4 @@
-import { useId, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import type { BudgetCategory, Expense, PaymentMethod } from "../types";
 import type { NewExpenseInput } from "../context/BudgetContext";
 import { Modal } from "./Modal";
@@ -16,9 +16,17 @@ interface QuickExpenseFormProps {
   onClose: () => void;
 }
 
-const KEYS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "00", "0", "⌫"] as const;
+const MAX_AMOUNT_DIGITS = 9;
 
-/** 숫자 키패드 기반 지출 입력 하단 시트(추가·수정 공용). */
+/** 입력 문자열에서 숫자만 남기고 앞자리 0과 자릿수 초과분을 정리한다. */
+function toAmountDigits(raw: string) {
+  return raw
+    .replace(/\D/g, "")
+    .replace(/^0+(?=\d)/, "")
+    .slice(0, MAX_AMOUNT_DIGITS);
+}
+
+/** 지출 입력 하단 시트(추가·수정 공용). 금액은 디바이스 숫자 키보드로 입력한다. */
 export function QuickExpenseForm({
   categories,
   defaultCategoryId,
@@ -53,17 +61,19 @@ export function QuickExpenseForm({
     sortedCategories.find((c) => c.id === categoryId)?.name ?? "";
   const amountValue = parseInt(amount || "0", 10);
 
-  const press = (key: string) => {
-    if (key === "⌫") {
-      setAmount((a) => a.slice(0, -1));
-      return;
-    }
-    setAmount((a) => {
-      if (a.replace(/^0+/, "").length >= 9) return a; // 9자리 초과 방지
-      if (a === "" && key === "00") return a;
-      return a + key;
+  const amountInputRef = useRef<HTMLInputElement>(null);
+
+  // Modal이 마운트 직후 패널로 포커스를 옮기므로, 그 뒤에 금액 입력으로 되돌린다.
+  useEffect(() => {
+    const id = requestAnimationFrame(() => {
+      const input = amountInputRef.current;
+      if (!input) return;
+      input.focus();
+      const end = input.value.length;
+      input.setSelectionRange(end, end);
     });
-  };
+    return () => cancelAnimationFrame(id);
+  }, []);
 
   const save = () => {
     if (!amountValue || amountValue <= 0) return;
@@ -90,9 +100,26 @@ export function QuickExpenseForm({
           </button>
         </div>
 
-        <div className="amount-display" aria-live="polite">
-          <span className="amount-num">{amountValue.toLocaleString("ko-KR")}</span>
-          <span className="amount-won"> 원</span>
+        <div className="amount-display">
+          <input
+            ref={amountInputRef}
+            className="amount-input"
+            type="text"
+            inputMode="numeric"
+            enterKeyHint="done"
+            autoComplete="off"
+            aria-label="금액"
+            placeholder="0"
+            value={amount === "" ? "" : Number(amount).toLocaleString("ko-KR")}
+            onChange={(e) => setAmount(toAmountDigits(e.target.value))}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                save();
+              }
+            }}
+          />
+          <span className="amount-won">원</span>
         </div>
 
         <div className="pay-row" role="radiogroup" aria-label="결제수단">
@@ -124,20 +151,6 @@ export function QuickExpenseForm({
               onClick={() => setCategoryId(c.id)}
             >
               {c.name}
-            </button>
-          ))}
-        </div>
-
-        <div className="keypad">
-          {KEYS.map((key) => (
-            <button
-              key={key}
-              type="button"
-              className="key"
-              aria-label={key === "⌫" ? "지우기" : key}
-              onClick={() => press(key)}
-            >
-              {key}
             </button>
           ))}
         </div>

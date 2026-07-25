@@ -88,10 +88,16 @@ reload. Storage keys are versioned (`budget-balance:data:v1`, `budget-balance:pr
 ### UI conventions
 
 - All user-facing strings and most code comments are Korean; match that.
-- Styling is plain CSS with custom properties in `:root` (`--ink`, `--accent: #ec3013`,
+- Styling is plain CSS with custom properties in `:root` (`--ink`, `--accent: #5980a6`,
   `--col: 460px`, `--soft-card*` shadows, status colors). Mobile-first single column, rounded cards
   (radius 18 / 22 / 26), shadows instead of borders — the "Soft" system described in the docs file.
   No CSS framework, no CSS modules.
+- **팔레트는 Claude Design "Industry"에서 가져온 `--color-*` 토큰이 원본이다.** `:root` 맨 위의
+  역할색(`--color-bg/surface/text/accent`)과 100–900 톤 램프가 원본이고, 그 아래 앱 토큰
+  (`--bg`, `--muted`, `--line-2` …)은 전부 램프를 `var()`로 참조한다. 색을 바꿀 때는 램프만 고치고,
+  규칙 안에 새 hex를 박지 않는다. 예외는 신호등 의미색(`--s-*`)과 `--danger` 계열 — 팔레트에 대응
+  역할이 없어 원래 값을 유지한다. `rgba()`는 `var(--color-*)`를 못 받으므로 그림자용으로
+  `--ink-rgb` / `--accent-rgb`를 따로 둔다.
 - **One design, one stylesheet.** [index.css](src/index.css) is the whole presentation layer; there
   is no theme switch, no `data-theme`, no route/hash handling. The earlier Modernist variant and its
   `design.ts` / `soft.css` plumbing were removed on 2026-07-25 — don't reintroduce scoped override
