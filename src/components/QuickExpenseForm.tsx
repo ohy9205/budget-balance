@@ -9,6 +9,7 @@ import {
 } from "@toss/tds-mobile";
 import type { BudgetCategory, Expense, PaymentMethod } from "../types";
 import type { NewExpenseInput } from "../context/BudgetContext";
+import { formatThousands, toAmountDigits } from "../lib/format";
 
 interface QuickExpenseFormProps {
   categories: BudgetCategory[];
@@ -23,17 +24,41 @@ interface QuickExpenseFormProps {
   onClose: () => void;
 }
 
-const MAX_AMOUNT_DIGITS = 9;
+/** 딤 영역을 눌러 닫을 수 있도록 시트 위쪽에 남겨 둘 여백 */
+const SHEET_TOP_GAP = 24;
 
-/** 입력 문자열에서 숫자만 남기고 앞자리 0과 자릿수 초과분을 정리한다. */
-function toAmountDigits(raw: string) {
-  return raw
-    .replace(/\D/g, "")
-    .replace(/^0+(?=\d)/, "")
-    .slice(0, MAX_AMOUNT_DIGITS);
+/**
+ * 키보드 위로 실제 보이는 영역에 맞춰 시트 높이를 자른다.
+ * TDS 기본 높이는 키보드가 떠도 줄지 않아 금액 입력이 화면 밖으로 밀린다.
+ */
+function useSheetMaxHeight() {
+  const [maxHeight, setMaxHeight] = useState<number | null>(null);
+  // 비율 상한은 항상 "키보드가 없을 때"의 높이를 기준으로 잡는다.
+  const fullHeightRef = useRef(0);
+
+  useEffect(() => {
+    const update = () => {
+      const visible = window.visualViewport?.height ?? window.innerHeight;
+      fullHeightRef.current = Math.max(fullHeightRef.current, window.innerHeight);
+      setMaxHeight(Math.min(visible - SHEET_TOP_GAP, fullHeightRef.current * 0.7));
+    };
+
+    update();
+    window.visualViewport?.addEventListener("resize", update);
+    window.addEventListener("resize", update);
+    return () => {
+      window.visualViewport?.removeEventListener("resize", update);
+      window.removeEventListener("resize", update);
+    };
+  }, []);
+
+  return maxHeight;
 }
 
-/** 지출 입력 하단 시트(추가·수정 공용). 금액은 디바이스 숫자 키보드로 입력한다. */
+/**
+ * 지출 입력 하단 시트(추가·수정 공용). 금액은 디바이스 숫자 키보드로 받는다 —
+ * TDS `NumberKeypad`는 레이아웃 안에서 자리를 고정으로 차지해 본문이 눌린다.
+ */
 export function QuickExpenseForm({
   categories,
   defaultCategoryId,
@@ -62,17 +87,16 @@ export function QuickExpenseForm({
     editing?.paymentMethod ?? defaultPaymentMethod ?? "credit",
   );
 
-  // 시트를 닫을 때는 먼저 닫힘 애니메이션을 재생하고, 끝난 뒤 호출부에 알린다.
+  // 닫힘 애니메이션을 재생한 뒤 호출부에 알리고, 후처리(삭제 요청 등)를 이어서 실행한다.
   const [open, setOpen] = useState(true);
   const close = useCallback(() => setOpen(false), []);
-
-  // 닫힘 애니메이션이 끝난 뒤 실행할 후처리(삭제 요청 등)
   const afterExitRef = useRef<(() => void) | null>(null);
 
   const activeCatName = sortedCategories.find((c) => c.id === categoryId)?.name ?? "";
   const amountValue = parseInt(amount || "0", 10);
 
   const amountInputRef = useRef<HTMLInputElement>(null);
+  const sheetMaxHeight = useSheetMaxHeight();
 
   // 시트가 열리며 포커스를 옮기므로, 그 뒤에 금액 입력으로 되돌린다.
   useEffect(() => {
@@ -105,22 +129,12 @@ export function QuickExpenseForm({
     close();
   };
 
-  const saveButton = (
-    <Button
-      color="primary"
-      display="block"
-      size="xlarge"
-      disabled={amountValue <= 0}
-      onClick={save}
-    >
-      {editing ? "저장" : "추가"}
-    </Button>
-  );
-
   return (
     <BottomSheet
       open={open}
       hasTextField
+      /* `maxHeight` prop은 마운트 시점 값으로 굳으므로 style로 덮어쓴다 */
+      style={sheetMaxHeight != null ? { maxHeight: sheetMaxHeight } : undefined}
       onDimmerClick={close}
       onExited={() => {
         const after = afterExitRef.current;
@@ -138,15 +152,31 @@ export function QuickExpenseForm({
         editing && onRequestDelete ? (
           <BottomSheet.DoubleCTA
             leftButton={
-              <Button color="light" display="block" size="xlarge" onClick={requestDelete}>
+              <Button
+                color="danger"
+                variant="weak"
+                display="block"
+                size="xlarge"
+                onClick={requestDelete}
+              >
                 삭제
               </Button>
             }
-            rightButton={saveButton}
+            rightButton={
+              <Button
+                color="primary"
+                display="block"
+                size="xlarge"
+                disabled={amountValue <= 0}
+                onClick={save}
+              >
+                저장
+              </Button>
+            }
           />
         ) : (
           <BottomSheet.CTA disabled={amountValue <= 0} onClick={save}>
-            {editing ? "저장" : "추가"}
+            추가
           </BottomSheet.CTA>
         )
       }
@@ -162,7 +192,7 @@ export function QuickExpenseForm({
           aria-label="금액"
           placeholder="0"
           suffix="원"
-          value={amount === "" ? "" : Number(amount).toLocaleString("ko-KR")}
+          value={formatThousands(amount)}
           onChange={(e) => setAmount(toAmountDigits(e.target.value))}
           onKeyDown={(e) => {
             if (e.key === "Enter") {
