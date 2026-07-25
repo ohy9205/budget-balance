@@ -57,6 +57,13 @@ reused as-is; UI work rewrites only the presentation layer.** Keep that split.
   category's expenses, and `sanitizeExpense` silently drops any expense whose `categoryId` isn't in
   the same month's sanitized category list. Adding a category-less expense path would lose data on
   the next load.
+- **`category.seedKey` points back at `DEFAULT_CATEGORY_SEED`.** Categories created from the seed
+  (and copies of them in later months) keep the seed's `key`, so `resetCategoryToDefault` can restore
+  name / monthlyBudget / targetExpenseAmount from [constants.ts](src/constants.ts) even after the
+  name was edited. Manually added categories have no `seedKey` and no default to return to.
+  `updateCategory`'s patch type excludes it; `sanitizeCategory` drops unknown keys and backfills
+  pre-`seedKey` data by matching the stored name against seed names. **Editing a seed entry's
+  `name`/amounts changes what "기본값" means for existing months; changing its `key` orphans them.**
 - Date strings are local-time formatted (`getMonthKey`/`getDateKey` use `getFullYear()` etc., not
   `toISOString`) — don't swap in UTC-based formatting.
 
@@ -99,5 +106,6 @@ reload. Storage keys are versioned (`budget-balance:data:v1`, `budget-balance:pr
 [README.md](README.md) still describes expense edit/delete UI and a pace-warning banner. The design
 port removed both from the UI; `updateExpense`/`deleteExpense` remain on the context but are
 currently unwired, and the pace warning was replaced by the projected-balance line in
-[SummaryCard.tsx](src/components/SummaryCard.tsx). Trust the code and the docs file over the README
-here.
+[SummaryCard.tsx](src/components/SummaryCard.tsx). `resetCategoryExpenses` is likewise unwired since
+the per-category settings button was repurposed to "기본값으로" (restore the seed defaults). Trust
+the code and the docs file over the README here.

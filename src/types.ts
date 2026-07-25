@@ -9,6 +9,11 @@ export interface BudgetCategory {
   targetExpenseAmount?: number;
   /** 카드 정렬 순서 (오름차순) */
   sortOrder: number;
+  /**
+   * 기본 예산 항목(`DEFAULT_CATEGORY_SEED`)에서 온 항목이면 그 시드 키.
+   * 이름을 바꿔도 기본값을 찾아갈 수 있게 하는 참조이며, 직접 추가한 항목에는 없다.
+   */
+  seedKey?: string;
 }
 
 export interface Expense {

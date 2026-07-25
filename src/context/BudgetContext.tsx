@@ -15,6 +15,7 @@ import type {
   PaymentMethod,
   Prefs,
 } from "../types";
+import { findCategorySeed } from "../constants";
 import { getMonthKey } from "../lib/date";
 import {
   copyBudgetFrom,
@@ -53,11 +54,14 @@ export interface BudgetContextValue {
   deleteExpense: (id: string) => void;
 
   addCategory: (data: { name: string; monthlyBudget: number; targetExpenseAmount?: number }) => void;
-  updateCategory: (id: string, patch: Partial<Omit<BudgetCategory, "id">>) => void;
+  /** `seedKey`는 기본값을 찾아가는 참조이므로 수정 대상에서 제외한다 */
+  updateCategory: (id: string, patch: Partial<Omit<BudgetCategory, "id" | "seedKey">>) => void;
   deleteCategory: (id: string) => void;
   moveCategory: (id: string, direction: "up" | "down") => void;
   /** 항목은 유지한 채 이 달의 해당 항목 지출만 모두 삭제 */
   resetCategoryExpenses: (id: string) => void;
+  /** 기본 항목의 이름·월 예산·목표 1회 지출액을 기본 예산값으로 되돌린다 (지출은 그대로) */
+  resetCategoryToDefault: (id: string) => void;
 
   resetCurrentMonth: () => void;
   exportStore: () => BudgetStore;
@@ -203,6 +207,7 @@ export function BudgetProvider({ children }: { children: ReactNode }) {
               ? Math.round(input.targetExpenseAmount)
               : undefined,
           sortOrder: maxOrder + 1,
+          // 직접 추가한 항목은 기본 예산에 대응하는 값이 없다 (되돌리기 대상 아님)
         };
         return { ...data, categories: [...data.categories, category] };
       });
@@ -211,7 +216,7 @@ export function BudgetProvider({ children }: { children: ReactNode }) {
   );
 
   const updateCategory = useCallback(
-    (id: string, patch: Partial<Omit<BudgetCategory, "id">>) => {
+    (id: string, patch: Partial<Omit<BudgetCategory, "id" | "seedKey">>) => {
       mutateMonth((data) => ({
         ...data,
         categories: data.categories.map((c) => (c.id === id ? { ...c, ...patch } : c)),
@@ -260,6 +265,27 @@ export function BudgetProvider({ children }: { children: ReactNode }) {
     [mutateMonth],
   );
 
+  const resetCategoryToDefault = useCallback(
+    (id: string) => {
+      // 지출·정렬 순서는 건드리지 않고 설정값(이름/월 예산/목표액)만 기본 예산값으로 복원
+      mutateMonth((data) => ({
+        ...data,
+        categories: data.categories.map((c) => {
+          if (c.id !== id) return c;
+          const seed = findCategorySeed(c.seedKey);
+          if (!seed) return c; // 직접 추가한 항목은 되돌릴 기본값이 없다
+          return {
+            ...c,
+            name: seed.name,
+            monthlyBudget: seed.monthlyBudget,
+            targetExpenseAmount: seed.targetExpenseAmount,
+          };
+        }),
+      }));
+    },
+    [mutateMonth],
+  );
+
   const resetCurrentMonth = useCallback(() => {
     setStore((prev) => {
       const next = { ...prev.months };
@@ -291,6 +317,7 @@ export function BudgetProvider({ children }: { children: ReactNode }) {
     deleteCategory,
     moveCategory,
     resetCategoryExpenses,
+    resetCategoryToDefault,
     resetCurrentMonth,
     exportStore,
     importStore,

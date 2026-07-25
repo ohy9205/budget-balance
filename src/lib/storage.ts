@@ -6,7 +6,13 @@ import type {
   PaymentMethod,
   Prefs,
 } from "../types";
-import { DEFAULT_CATEGORY_SEED, PREFS_KEY, STORAGE_KEY, STORE_VERSION } from "../constants";
+import {
+  DEFAULT_CATEGORY_SEED,
+  findCategorySeed,
+  PREFS_KEY,
+  STORAGE_KEY,
+  STORE_VERSION,
+} from "../constants";
 import { isValidMonthKey } from "./date";
 
 function newId(): string {
@@ -19,6 +25,17 @@ function newId(): string {
 const isPaymentMethod = (v: unknown): v is PaymentMethod => v === "credit" || v === "debit";
 const isFiniteNumber = (v: unknown): v is number => typeof v === "number" && Number.isFinite(v);
 const isNonEmptyString = (v: unknown): v is string => typeof v === "string" && v.length > 0;
+
+/**
+ * 시드 키 정규화. 모르는 키는 버리고, 키가 없는 예전 데이터는 이름으로 기본 항목을 찾아 붙여 준다
+ * (이 필드 도입 이전에 만들어진 기본 항목도 기본값으로 되돌릴 수 있게).
+ */
+function sanitizeSeedKey(raw: unknown, name: string): string | undefined {
+  if (isNonEmptyString(raw)) {
+    return findCategorySeed(raw)?.key;
+  }
+  return DEFAULT_CATEGORY_SEED.find((s) => s.name === name)?.key;
+}
 
 /** 알 수 없는 값을 안전하게 BudgetCategory로 정규화 (실패 시 null) */
 function sanitizeCategory(raw: unknown, index: number): BudgetCategory | null {
@@ -36,6 +53,7 @@ function sanitizeCategory(raw: unknown, index: number): BudgetCategory | null {
     monthlyBudget,
     targetExpenseAmount: target,
     sortOrder: isFiniteNumber(r.sortOrder) ? r.sortOrder : index,
+    seedKey: sanitizeSeedKey(r.seedKey, r.name),
   };
 }
 
@@ -135,7 +153,7 @@ export function savePrefs(prefs: Prefs): void {
 export function createSeededMonth(month: string): MonthlyBudgetData {
   return {
     month,
-    categories: DEFAULT_CATEGORY_SEED.map((c) => ({ ...c, id: newId() })),
+    categories: DEFAULT_CATEGORY_SEED.map(({ key, ...c }) => ({ ...c, id: newId(), seedKey: key })),
     expenses: [],
   };
 }
@@ -153,6 +171,8 @@ export function copyBudgetFrom(source: MonthlyBudgetData, targetMonth: string): 
         monthlyBudget: c.monthlyBudget,
         targetExpenseAmount: c.targetExpenseAmount,
         sortOrder: c.sortOrder,
+        // 기본 항목 여부는 월을 넘어가도 유지된다 (id만 새로 발급)
+        seedKey: c.seedKey,
       })),
     expenses: [],
   };

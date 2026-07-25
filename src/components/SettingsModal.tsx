@@ -1,7 +1,9 @@
 import { useId, useRef, useState } from "react";
 import type { BudgetCategory } from "../types";
 import { useBudget } from "../context/BudgetContext";
+import { findCategorySeed } from "../constants";
 import { formatMonthLabel } from "../lib/date";
+import { formatCurrency } from "../lib/format";
 import { exportStoreJSON, parseImportedJSON } from "../lib/storage";
 import { Modal } from "./Modal";
 import { ConfirmDialog } from "./ConfirmDialog";
@@ -12,9 +14,28 @@ interface SettingsModalProps {
 
 type PendingConfirm =
   | { kind: "deleteCategory"; category: BudgetCategory }
-  | { kind: "resetCategory"; category: BudgetCategory; count: number }
+  | { kind: "resetCategory"; category: BudgetCategory; changes: string[] }
   | { kind: "resetMonth" }
   | { kind: "import"; store: ReturnType<typeof parseImportedJSON> };
+
+/** 기본 예산값과 달라진 설정만 "월 예산 270,000원" 형태로 나열 (기본 항목이 아니거나 같으면 빈 배열) */
+function defaultDiff(c: BudgetCategory): string[] {
+  const seed = findCategorySeed(c.seedKey);
+  if (!seed) return [];
+  const parts: string[] = [];
+  if (c.name !== seed.name) parts.push(`이름 ${seed.name}`);
+  if (c.monthlyBudget !== seed.monthlyBudget) {
+    parts.push(`월 예산 ${formatCurrency(seed.monthlyBudget)}`);
+  }
+  if (c.targetExpenseAmount !== seed.targetExpenseAmount) {
+    parts.push(
+      `목표 1회 지출액 ${
+        seed.targetExpenseAmount ? formatCurrency(seed.targetExpenseAmount) : "없음"
+      }`,
+    );
+  }
+  return parts;
+}
 
 export function SettingsModal({ onClose }: SettingsModalProps) {
   const {
@@ -24,7 +45,7 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
     updateCategory,
     deleteCategory,
     moveCategory,
-    resetCategoryExpenses,
+    resetCategoryToDefault,
     resetCurrentMonth,
     exportStore,
     importStore,
@@ -43,12 +64,6 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
   const categories = monthData
     ? [...monthData.categories].sort((a, b) => a.sortOrder - b.sortOrder)
     : [];
-
-  // 항목별 지출 건수 (초기화 버튼 활성/비활성 및 안내 문구용)
-  const expenseCounts = new Map<string, number>();
-  for (const e of monthData?.expenses ?? []) {
-    expenseCounts.set(e.categoryId, (expenseCounts.get(e.categoryId) ?? 0) + 1);
-  }
 
   const addDisabled = !newName.trim() || newBudget.trim() === "";
 
@@ -112,7 +127,9 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
               <p className="data-note">먼저 이번 달 예산을 생성해 주세요.</p>
             ) : (
               <div className="cat-edit-list">
-                {categories.map((c, idx) => (
+                {categories.map((c, idx) => {
+                  const changes = defaultDiff(c);
+                  return (
                   <div key={c.id} className="cat-edit">
                     <div className="cat-edit-fields">
                       <input
@@ -157,6 +174,9 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
                           />
                         </label>
                       </div>
+                      {changes.length > 0 && (
+                        <p className="cat-default-note">기본값 · {changes.join(" · ")}</p>
+                      )}
                       <div className="cat-edit-actions">
                         <button
                           type="button"
@@ -179,21 +199,19 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
                         <button
                           type="button"
                           className="reset-btn"
-                          aria-label={`${c.name} 지출 초기화`}
-                          title="이 항목의 지출 초기화"
-                          disabled={(expenseCounts.get(c.id) ?? 0) === 0}
-                          onClick={() =>
-                            setConfirm({
-                              kind: "resetCategory",
-                              category: c,
-                              count: expenseCounts.get(c.id) ?? 0,
-                            })
+                          aria-label={`${c.name} 설정을 기본값으로 되돌리기`}
+                          title={
+                            c.seedKey
+                              ? "이름·월 예산·목표 1회 지출액을 기본 예산값으로 되돌립니다"
+                              : "직접 추가한 항목이라 되돌릴 기본값이 없습니다"
                           }
+                          disabled={changes.length === 0}
+                          onClick={() => setConfirm({ kind: "resetCategory", category: c, changes })}
                         >
                           <span className="reset-glyph" aria-hidden="true">
                             ↺
                           </span>
-                          지출 초기화
+                          기본값으로
                         </button>
                       </div>
                     </div>
@@ -206,7 +224,8 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
                       ✕
                     </button>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             )}
 
@@ -313,13 +332,14 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
 
       {confirm?.kind === "resetCategory" && (
         <ConfirmDialog
-          title="항목 지출 초기화"
-          danger
-          message={`'${confirm.category.name}'의 이 달 지출 ${confirm.count}건이 모두 삭제되고 사용액이 0원이 됩니다. 예산 설정은 그대로 유지됩니다. 계속할까요?`}
-          confirmLabel="초기화"
+          title="항목 설정 초기화"
+          message={`'${confirm.category.name}' 항목이 기본 예산값(${confirm.changes.join(
+            ", ",
+          )})으로 되돌아갑니다. 지출 내역은 그대로 유지됩니다. 계속할까요?`}
+          confirmLabel="되돌리기"
           onCancel={() => setConfirm(null)}
           onConfirm={() => {
-            resetCategoryExpenses(confirm.category.id);
+            resetCategoryToDefault(confirm.category.id);
             setConfirm(null);
           }}
         />
