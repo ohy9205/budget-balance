@@ -1,4 +1,14 @@
 import { useState } from "react";
+import {
+  Button,
+  FixedBottomCTA,
+  ListHeader,
+  Paragraph,
+  TopNavigation,
+  TopNavigationTextButton,
+} from "@toss/tds-mobile";
+import { TDSMobileAITProvider } from "@toss/tds-mobile-ait";
+import { adaptive } from "@toss/tds-colors";
 import type { Expense } from "./types";
 import { BudgetProvider, useBudget, type NewExpenseInput } from "./context/BudgetContext";
 import { allCategoryStats } from "./lib/calculations";
@@ -48,77 +58,82 @@ function Dashboard() {
 
   return (
     <div className="app-shell">
-      <div className="sticky-head">
-        <div className="topbar">
-          <MonthSelector />
-          <div className="topbar-actions">
-            {monthData && (
-              <button
-                type="button"
-                className="head-add"
-                onClick={() => setExpenseModal({ mode: "add" })}
-                aria-label="지출 추가"
-                title="지출 추가"
-              >
-                <span aria-hidden="true">+</span>
-              </button>
-            )}
-            <button
-              type="button"
-              className="link-btn"
-              onClick={() => setShowSettings(true)}
-              disabled={!monthData}
-            >
-              설정
-            </button>
-          </div>
-        </div>
-        {monthData && <SummaryCard data={monthData} />}
-      </div>
+      <TopNavigation
+        fixed
+        background="blur"
+        content={<MonthSelector />}
+        trailing={
+          <TopNavigationTextButton disabled={!monthData} onClick={() => setShowSettings(true)}>
+            설정
+          </TopNavigationTextButton>
+        }
+      />
 
-      {!monthData ? (
-        <section className="empty-month">
-          <p>{getMonthKey() === currentMonth ? "이번 달" : "이 달"} 예산이 아직 없습니다.</p>
-          <div className="empty-actions">
-            <button type="button" className="add-btn" onClick={createEmptyMonthFromSeed}>
-              기본 예산으로 생성
-            </button>
-            <button
-              type="button"
-              className="data-btn"
-              onClick={copyFromPreviousMonth}
-              disabled={!previousMonthWithData}
-            >
-              {previousMonthWithData
-                ? `지난달(${previousMonthWithData}) 예산 복사`
-                : "복사할 지난달 없음"}
-            </button>
-          </div>
-        </section>
-      ) : (
-        <>
-          <section aria-label="예산 항목">
-            <div className="section-head">
-              <span className="section-title">예산 항목</span>
-              <span className="section-note">{monthData.categories.length}개 항목</span>
-            </div>
-            <div className="list-block cats">
-              {stats.map((s) => (
-                <CategoryCard
-                  key={s.category.id}
-                  stats={s}
-                  onAddExpense={(categoryId) => setExpenseModal({ mode: "add", categoryId })}
-                />
-              ))}
+      <main className="app-main">
+        {monthData && <SummaryCard data={monthData} />}
+
+        {!monthData ? (
+          <section className="empty-month">
+            <Paragraph typography="t6" color={adaptive.grey600} textAlign="center">
+              <Paragraph.Text>
+                {getMonthKey() === currentMonth ? "이번 달" : "이 달"} 예산이 아직 없습니다.
+              </Paragraph.Text>
+            </Paragraph>
+            <div className="empty-actions">
+              <Button display="block" size="xlarge" onClick={createEmptyMonthFromSeed}>
+                기본 예산으로 생성
+              </Button>
+              <Button
+                display="block"
+                size="xlarge"
+                variant="weak"
+                color="light"
+                disabled={!previousMonthWithData}
+                onClick={copyFromPreviousMonth}
+              >
+                {previousMonthWithData
+                  ? `지난달(${previousMonthWithData}) 예산 복사`
+                  : "복사할 지난달 없음"}
+              </Button>
             </div>
           </section>
+        ) : (
+          <>
+            <section aria-label="예산 항목">
+              <ListHeader
+                title={
+                  <ListHeader.TitleParagraph fontWeight="bold">
+                    예산 항목
+                  </ListHeader.TitleParagraph>
+                }
+                right={
+                  <ListHeader.RightText>{`${monthData.categories.length}개 항목`}</ListHeader.RightText>
+                }
+              />
+              <div className="list-rows cats">
+                {stats.map((s) => (
+                  <CategoryCard
+                    key={s.category.id}
+                    stats={s}
+                    onAddExpense={(categoryId) => setExpenseModal({ mode: "add", categoryId })}
+                  />
+                ))}
+              </div>
+            </section>
 
-          <RecentExpenses
-            expenses={monthData.expenses}
-            categories={monthData.categories}
-            onEdit={(expense) => setExpenseModal({ mode: "edit", expense })}
-          />
-        </>
+            <RecentExpenses
+              expenses={monthData.expenses}
+              categories={monthData.categories}
+              onEdit={(expense) => setExpenseModal({ mode: "edit", expense })}
+            />
+          </>
+        )}
+      </main>
+
+      {monthData && (
+        <FixedBottomCTA onClick={() => setExpenseModal({ mode: "add" })}>
+          지출 추가
+        </FixedBottomCTA>
       )}
 
       {expenseModal.mode !== "closed" && monthData && (
@@ -131,10 +146,7 @@ function Dashboard() {
           defaultDate={defaultDate}
           editing={expenseModal.mode === "edit" ? expenseModal.expense : undefined}
           onSubmit={handleSubmitExpense}
-          onRequestDelete={(expense) => {
-            setExpenseModal({ mode: "closed" });
-            setDeleteTarget(expense);
-          }}
+          onRequestDelete={(expense) => setDeleteTarget(expense)}
           onClose={() => setExpenseModal({ mode: "closed" })}
         />
       )}
@@ -160,8 +172,10 @@ function Dashboard() {
 
 export default function App() {
   return (
-    <BudgetProvider>
-      <Dashboard />
-    </BudgetProvider>
+    <TDSMobileAITProvider>
+      <BudgetProvider>
+        <Dashboard />
+      </BudgetProvider>
+    </TDSMobileAITProvider>
   );
 }

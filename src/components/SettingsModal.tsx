@@ -1,11 +1,22 @@
-import { useId, useRef, useState } from "react";
+import { useRef, useState } from "react";
+import {
+  Border,
+  Button,
+  IconButton,
+  ListHeader,
+  Modal,
+  Paragraph,
+  TextField,
+  TopNavigation,
+  TopNavigationTextButton,
+} from "@toss/tds-mobile";
+import { adaptive } from "@toss/tds-colors";
 import type { BudgetCategory } from "../types";
 import { useBudget } from "../context/BudgetContext";
 import { findCategorySeed } from "../constants";
 import { formatMonthLabel } from "../lib/date";
 import { formatCurrency } from "../lib/format";
 import { exportStoreJSON, parseImportedJSON } from "../lib/storage";
-import { Modal } from "./Modal";
 import { ConfirmDialog } from "./ConfirmDialog";
 
 interface SettingsModalProps {
@@ -51,7 +62,6 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
     importStore,
   } = useBudget();
 
-  const titleId = useId();
   const [confirm, setConfirm] = useState<PendingConfirm | null>(null);
   const [importError, setImportError] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -109,96 +119,116 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
 
   return (
     <>
-      <Modal variant="fullscreen" backdrop={false} labelledBy={titleId} onClose={onClose}>
-        <div className="settings-panel">
-          <div className="settings-head">
-            <span className="settings-title" id={titleId}>
-              설정 · 데이터 관리
-            </span>
-            <button type="button" className="sheet-close" aria-label="닫기" onClick={onClose}>
-              ✕
-            </button>
-          </div>
+      <Modal open>
+        <Modal.Overlay onClick={onClose} />
+        <Modal.Content className="settings-panel" aria-label="설정 · 데이터 관리">
+          <TopNavigation
+            content={
+              <Paragraph typography="t5" fontWeight="bold" color={adaptive.grey900}>
+                <Paragraph.Text>설정 · 데이터 관리</Paragraph.Text>
+              </Paragraph>
+            }
+            trailing={
+              <TopNavigationTextButton onClick={onClose}>닫기</TopNavigationTextButton>
+            }
+          />
 
           <div className="settings-body">
-            <div className="settings-label">예산 항목 · {formatMonthLabel(currentMonth)}</div>
+            <ListHeader
+              title={
+                <ListHeader.TitleParagraph fontWeight="bold">
+                  {`예산 항목 · ${formatMonthLabel(currentMonth)}`}
+                </ListHeader.TitleParagraph>
+              }
+            />
 
             {!monthData ? (
-              <p className="data-note">먼저 이번 달 예산을 생성해 주세요.</p>
+              <Paragraph typography="t7" color={adaptive.grey600}>
+                <Paragraph.Text>먼저 이번 달 예산을 생성해 주세요.</Paragraph.Text>
+              </Paragraph>
             ) : (
               <div className="cat-edit-list">
                 {categories.map((c, idx) => {
                   const changes = defaultDiff(c);
                   return (
-                  <div key={c.id} className="cat-edit">
-                    <div className="cat-edit-fields">
-                      <input
-                        className="set-input cat-edit-name"
-                        type="text"
-                        aria-label="항목 이름"
-                        value={c.name}
-                        onChange={(e) => updateCategory(c.id, { name: e.target.value })}
-                      />
-                      <div className="cat-edit-nums">
-                        <label className="mini-field">
-                          월 예산
-                          <input
-                            className="set-input"
-                            type="number"
-                            min={0}
-                            step={1000}
-                            value={c.monthlyBudget}
-                            onChange={(e) =>
-                              updateCategory(c.id, {
-                                monthlyBudget: Math.max(0, Math.round(Number(e.target.value) || 0)),
-                              })
-                            }
-                          />
-                        </label>
-                        <label className="mini-field">
-                          목표 1회 지출액
-                          <input
-                            className="set-input"
-                            type="number"
-                            min={0}
-                            step={1000}
-                            placeholder="없음"
-                            value={c.targetExpenseAmount ?? ""}
-                            onChange={(e) => {
-                              const v = e.target.value.trim();
-                              updateCategory(c.id, {
-                                targetExpenseAmount:
-                                  v === "" || Number(v) <= 0 ? undefined : Math.round(Number(v)),
-                              });
-                            }}
-                          />
-                        </label>
+                    <div key={c.id} className="cat-edit">
+                      <div className="cat-edit-head">
+                        <TextField
+                          variant="box"
+                          label="항목 이름"
+                          labelOption="sustain"
+                          value={c.name}
+                          onChange={(e) => updateCategory(c.id, { name: e.target.value })}
+                        />
+                        <IconButton
+                          name="icon-x-circle-mono"
+                          aria-label={`${c.name} 삭제`}
+                          color={adaptive.grey400}
+                          onClick={() => setConfirm({ kind: "deleteCategory", category: c })}
+                        />
                       </div>
+
+                      <div className="cat-edit-nums">
+                        <TextField
+                          variant="box"
+                          label="월 예산"
+                          labelOption="sustain"
+                          type="number"
+                          min={0}
+                          step={1000}
+                          suffix="원"
+                          value={c.monthlyBudget}
+                          onChange={(e) =>
+                            updateCategory(c.id, {
+                              monthlyBudget: Math.max(0, Math.round(Number(e.target.value) || 0)),
+                            })
+                          }
+                        />
+                        <TextField
+                          variant="box"
+                          label="목표 1회 지출액"
+                          labelOption="sustain"
+                          type="number"
+                          min={0}
+                          step={1000}
+                          placeholder="없음"
+                          suffix="원"
+                          value={c.targetExpenseAmount ?? ""}
+                          onChange={(e) => {
+                            const v = e.target.value.trim();
+                            updateCategory(c.id, {
+                              targetExpenseAmount:
+                                v === "" || Number(v) <= 0 ? undefined : Math.round(Number(v)),
+                            });
+                          }}
+                        />
+                      </div>
+
                       {changes.length > 0 && (
-                        <p className="cat-default-note">기본값 · {changes.join(" · ")}</p>
+                        <Paragraph typography="st13" color={adaptive.grey500}>
+                          <Paragraph.Text>{`기본값 · ${changes.join(" · ")}`}</Paragraph.Text>
+                        </Paragraph>
                       )}
+
                       <div className="cat-edit-actions">
-                        <button
-                          type="button"
-                          className="icon-sq"
+                        <IconButton
+                          name="icon-arrow-up-mono"
                           aria-label={`${c.name} 위로`}
+                          color={adaptive.grey600}
                           disabled={idx === 0}
                           onClick={() => moveCategory(c.id, "up")}
-                        >
-                          ↑
-                        </button>
-                        <button
-                          type="button"
-                          className="icon-sq"
+                        />
+                        <IconButton
+                          name="icon-arrow-down-mono"
                           aria-label={`${c.name} 아래로`}
+                          color={adaptive.grey600}
                           disabled={idx === categories.length - 1}
                           onClick={() => moveCategory(c.id, "down")}
-                        >
-                          ↓
-                        </button>
-                        <button
-                          type="button"
-                          className="reset-btn"
+                        />
+                        <Button
+                          size="small"
+                          variant="weak"
+                          color="light"
                           aria-label={`${c.name} 설정을 기본값으로 되돌리기`}
                           title={
                             c.seedKey
@@ -208,84 +238,89 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
                           disabled={changes.length === 0}
                           onClick={() => setConfirm({ kind: "resetCategory", category: c, changes })}
                         >
-                          <span className="reset-glyph" aria-hidden="true">
-                            ↺
-                          </span>
                           기본값으로
-                        </button>
+                        </Button>
                       </div>
+
+                      <Border variant="full" />
                     </div>
-                    <button
-                      type="button"
-                      className="cat-del"
-                      aria-label={`${c.name} 삭제`}
-                      onClick={() => setConfirm({ kind: "deleteCategory", category: c })}
-                    >
-                      ✕
-                    </button>
-                  </div>
                   );
                 })}
               </div>
             )}
 
             {monthData && (
-              <div className="settings-group">
-                <div className="settings-grouptitle">항목 추가</div>
+              <section className="settings-group">
+                <ListHeader
+                  title={
+                    <ListHeader.TitleParagraph fontWeight="bold">
+                      항목 추가
+                    </ListHeader.TitleParagraph>
+                  }
+                />
                 <div className="add-fields">
-                  <input
-                    className="set-input"
-                    type="text"
+                  <TextField
+                    variant="box"
+                    label="항목 이름"
+                    labelOption="sustain"
                     placeholder="항목 이름"
-                    aria-label="새 항목 이름"
                     value={newName}
                     onChange={(e) => setNewName(e.target.value)}
                   />
-                  <input
-                    className="set-input"
+                  <TextField
+                    variant="box"
+                    label="월 예산"
+                    labelOption="sustain"
                     type="number"
                     min={0}
                     step={1000}
-                    placeholder="월 예산"
-                    aria-label="새 항목 월 예산"
+                    suffix="원"
                     value={newBudget}
                     onChange={(e) => setNewBudget(e.target.value)}
                   />
-                  <input
-                    className="set-input"
+                  <TextField
+                    variant="box"
+                    label="목표 1회 지출액 (선택)"
+                    labelOption="sustain"
                     type="number"
                     min={0}
                     step={1000}
-                    placeholder="목표 1회 지출액 (선택)"
-                    aria-label="새 항목 목표 1회 지출액"
+                    suffix="원"
                     value={newTarget}
                     onChange={(e) => setNewTarget(e.target.value)}
                   />
-                  <button
-                    type="button"
-                    className="add-btn"
-                    onClick={handleAdd}
+                  <Button
+                    display="block"
+                    size="large"
                     disabled={addDisabled}
+                    onClick={handleAdd}
                   >
                     추가
-                  </button>
+                  </Button>
                 </div>
-              </div>
+              </section>
             )}
 
-            <div className="settings-group">
-              <div className="settings-grouptitle">데이터 관리</div>
+            <section className="settings-group">
+              <ListHeader
+                title={
+                  <ListHeader.TitleParagraph fontWeight="bold">
+                    데이터 관리
+                  </ListHeader.TitleParagraph>
+                }
+              />
               <div className="data-btns">
-                <button type="button" className="data-btn" onClick={handleExport}>
+                <Button variant="weak" color="light" size="medium" onClick={handleExport}>
                   JSON 내보내기
-                </button>
-                <button
-                  type="button"
-                  className="data-btn"
+                </Button>
+                <Button
+                  variant="weak"
+                  color="light"
+                  size="medium"
                   onClick={() => fileInputRef.current?.click()}
                 >
                   JSON 가져오기
-                </button>
+                </Button>
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -294,26 +329,29 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
                   onChange={handleFileChange}
                 />
                 {monthData && (
-                  <button
-                    type="button"
-                    className="data-btn danger"
+                  <Button
+                    variant="weak"
+                    color="danger"
+                    size="medium"
                     onClick={() => setConfirm({ kind: "resetMonth" })}
                   >
                     이번 달 데이터 초기화
-                  </button>
+                  </Button>
                 )}
               </div>
               {importError && (
-                <p className="data-note" role="alert" style={{ color: "var(--danger)" }}>
-                  {importError}
-                </p>
+                <Paragraph typography="t7" color={adaptive.red500}>
+                  <Paragraph.Text role="alert">{importError}</Paragraph.Text>
+                </Paragraph>
               )}
-              <p className="data-note">
-                가져오기를 실행하면 현재 전체 데이터가 파일 내용으로 교체됩니다.
-              </p>
-            </div>
+              <Paragraph typography="st13" color={adaptive.grey500}>
+                <Paragraph.Text>
+                  가져오기를 실행하면 현재 전체 데이터가 파일 내용으로 교체됩니다.
+                </Paragraph.Text>
+              </Paragraph>
+            </section>
           </div>
-        </div>
+        </Modal.Content>
       </Modal>
 
       {confirm?.kind === "deleteCategory" && (

@@ -41,9 +41,10 @@ Three layers, deliberately separated:
    [src/index.css](src/index.css). Components read state via `useBudget()` or receive it as props;
    they never touch `localStorage` or recompute budget math themselves.
 
-[docs/budget-mobile-implementation.md](docs/budget-mobile-implementation.md) records the design
-port that produced the current UI, and states the standing rule: **the logic/state layers are
-reused as-is; UI work rewrites only the presentation layer.** Keep that split.
+[docs/budget-mobile-implementation.md](docs/budget-mobile-implementation.md) records the earlier
+"Soft" design port. That UI is gone (the presentation layer now runs on 토스 TDS Mobile — see
+[UI conventions](#ui-conventions)), but the standing rule it states still holds: **the logic/state
+layers are reused as-is; UI work rewrites only the presentation layer.** Keep that split.
 
 ### Data model invariants
 
@@ -78,7 +79,8 @@ reload. Storage keys are versioned (`budget-balance:data:v1`, `budget-balance:pr
 ### Calculation rules worth knowing
 
 - `statusFromUsageRate`: `<60` safe / `60–<80` caution / `80–100` warning / `>100` over.
-  Thresholds live in `STATUS_THRESHOLDS`; CSS mirrors them as `.s-safe|.s-caution|.s-warning|.s-over`.
+  Thresholds live in `STATUS_THRESHOLDS`; the UI maps the four statuses to TDS colors in
+  [statusTheme.ts](src/components/statusTheme.ts).
 - Zero-budget-with-spending is deliberately reported as `100 + used` rather than `Infinity`, so it
   sorts as "over" without breaking formatting.
 - `projection()` and `paceWarning()` return **`null` for any month that isn't the current month**;
@@ -88,30 +90,43 @@ reload. Storage keys are versioned (`budget-balance:data:v1`, `budget-balance:pr
 ### UI conventions
 
 - All user-facing strings and most code comments are Korean; match that.
-- Styling is plain CSS with custom properties in `:root` (`--ink`, `--accent: #5980a6`,
-  `--col: 460px`, `--soft-card*` shadows, status colors). Mobile-first single column, rounded cards
-  (radius 18 / 22 / 26), shadows instead of borders — the "Soft" system described in the docs file.
-  No CSS framework, no CSS modules.
-- **팔레트는 Claude Design "Industry"에서 가져온 `--color-*` 토큰이 원본이다.** `:root` 맨 위의
-  역할색(`--color-bg/surface/text/accent`)과 100–900 톤 램프가 원본이고, 그 아래 앱 토큰
-  (`--bg`, `--muted`, `--line-2` …)은 전부 램프를 `var()`로 참조한다. 색을 바꿀 때는 램프만 고치고,
-  규칙 안에 새 hex를 박지 않는다. 예외는 신호등 의미색(`--s-*`)과 `--danger` 계열 — 팔레트에 대응
-  역할이 없어 원래 값을 유지한다. `rgba()`는 `var(--color-*)`를 못 받으므로 그림자용으로
-  `--ink-rgb` / `--accent-rgb`를 따로 둔다.
-- **One design, one stylesheet.** [index.css](src/index.css) is the whole presentation layer; there
-  is no theme switch, no `data-theme`, no route/hash handling. The earlier Modernist variant and its
-  `design.ts` / `soft.css` plumbing were removed on 2026-07-25 — don't reintroduce scoped override
-  sheets, edit the base rules. `.list-block.cats` / `.list-block.exps` are layout modifiers (floating
-  cards vs. one card of rows), not theme hooks.
-- [Modal.tsx](src/components/Modal.tsx) is the only overlay primitive (`sheet` / `fullscreen` /
-  `center` variants, Esc + backdrop close, `aria-modal`); build new dialogs on it, and route
-  destructive actions through [ConfirmDialog.tsx](src/components/ConfirmDialog.tsx).
+- **UI는 토스 [TDS Mobile](https://tossmini-docs.toss.im/tds-mobile/)(`@toss/tds-mobile`)로 만든다.**
+  2026-07-25에 직접 만든 "Soft" 디자인 시스템을 걷어내고 TDS로 갈아탔다. 새 UI를 만들 때는 먼저
+  `@toss/tds-mobile`에 해당 컴포넌트가 있는지 보고, 없을 때만 직접 만든다. 타입 정의
+  (`node_modules/@toss/tds-mobile/dist/esm/index.d.ts`)가 사실상의 API 문서다.
+- [App.tsx](src/App.tsx)의 최상단이 `TDSMobileAITProvider`(`@toss/tds-mobile-ait`)다. 이게
+  `:root`에 `--adaptive*` 색 변수와 타이포 변수를 주입하므로 **provider 밖에서는 TDS 컴포넌트가
+  깨진다.** 토스 앱 밖(일반 브라우저)에서는 `@apps-in-toss/web-framework` 호출이 실패하지만
+  provider가 try/catch로 감싸 기본값(blue500, safe-area 0)으로 떨어지므로 그대로 동작한다.
+  `colorPreference`는 `"light"`로 고정돼 있다 — 다크 모드는 지원하지 않는다.
+- **색은 `adaptive`(`@toss/tds-colors`)에서만 가져온다.** `adaptive.grey900` 같은 값은 실제로는
+  `var(--adaptiveGrey900)` 문자열이라 `style`/props 어디에나 넣을 수 있다. 새 hex를 만들지 않는다.
+  상태색(여유/주의/위험/초과) 매핑은 [statusTheme.ts](src/components/statusTheme.ts) 한 곳에만 두고,
+  뱃지는 색(blue/yellow/red) + variant(weak/fill) 조합으로 위험과 초과를 구분한다.
+- 타이포는 `Paragraph` / `ListRow.Text`의 `typography` 토큰을 쓴다. 크기는 t1=30px, t2=26, t3=22,
+  t4=20, t5=17, t6=15, t7=13, st13=11px (전체 순서: t1 st1 st2 st3 t2 st4 st5 st6 t3 st7 t4 st8 st9
+  t5 st10 t6 st11 t7 st12 st13 = 30→11px).
+- 아이콘은 `IconButton`/`TopNavigationIconButton`의 `name`으로 지정하며 `https://static.toss.im/icons/svg/{name}.svg`
+  에서 받아온다. **TDS 자신이 참조하는 이름만 쓴다** (`icon-arrow-left-small-mono`,
+  `icon-arrow-right-small-mono`, `icon-arrow-up-mono`, `icon-arrow-down-mono`, `icon-x-circle-mono` …)
+  — 없는 이름을 넣으면 조용히 404가 난다.
+- [index.css](src/index.css)는 이제 **레이아웃 전용**이다 (중앙 460px 컬럼, 섹션 간격, 시트/설정
+  화면 내부 여백). 색·모양·타이포는 넣지 않는다. `.app-shell`의 `transform: translateZ(0)`는
+  일부러 넣은 것 — TDS의 `TopNavigation fixed` / `FixedBottomCTA`가 뷰포트가 아니라 이 컬럼을
+  기준으로 고정되게 하는 containing block이다. 지우면 데스크톱에서 화면 전체로 퍼진다.
+- `ListRow`는 `as="button"`으로 렌더링해 행 전체를 누를 수 있게 하며(`.cat-row`, `.exp-row`가
+  버튼 기본 스타일만 지운다), 그래서 `<List>`(ul) 대신 `.list-rows` div로 감싼다.
+- 오버레이는 전부 TDS 것을 쓴다: 하단 시트는 `BottomSheet`(+ `BottomSheet.CTA` / `DoubleCTA`),
+  전체 화면은 `Modal` + `Modal.Overlay` / `Modal.Content`, 파괴적 동작은
+  [ConfirmDialog.tsx](src/components/ConfirmDialog.tsx)(TDS `ConfirmDialog` 래퍼)를 거친다.
+  직접 만들었던 `Modal.tsx` 프리미티브는 삭제했다 — 되살리지 말 것.
+  `BottomSheet`는 닫힘 애니메이션 후 `onExited`가 불리므로, 시트를 닫고 이어서 할 일
+  (예: 삭제 확인 다이얼로그 열기)은 `onExited` 뒤로 미룬다 —
+  [QuickExpenseForm.tsx](src/components/QuickExpenseForm.tsx)의 `afterExitRef` 참고.
 
 ### Known README drift
 
-[README.md](README.md) still describes expense edit/delete UI and a pace-warning banner. The design
-port removed both from the UI; `updateExpense`/`deleteExpense` remain on the context but are
-currently unwired, and the pace warning was replaced by the projected-balance line in
-[SummaryCard.tsx](src/components/SummaryCard.tsx). `resetCategoryExpenses` is likewise unwired since
-the per-category settings button was repurposed to "기본값으로" (restore the seed defaults). Trust
-the code and the docs file over the README here.
+[README.md](README.md) still describes a pace-warning banner; it was replaced by the
+projected-balance line in [SummaryCard.tsx](src/components/SummaryCard.tsx). `resetCategoryExpenses`
+is unwired since the per-category settings button was repurposed to "기본값으로" (restore the seed
+defaults). Trust the code over the README here.

@@ -1,7 +1,14 @@
-import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  BottomSheet,
+  Button,
+  Chip,
+  ChipItem,
+  SegmentedControl,
+  TextField,
+} from "@toss/tds-mobile";
 import type { BudgetCategory, Expense, PaymentMethod } from "../types";
 import type { NewExpenseInput } from "../context/BudgetContext";
-import { Modal } from "./Modal";
 
 interface QuickExpenseFormProps {
   categories: BudgetCategory[];
@@ -37,8 +44,6 @@ export function QuickExpenseForm({
   onRequestDelete,
   onClose,
 }: QuickExpenseFormProps) {
-  const titleId = useId();
-
   const sortedCategories = useMemo(
     () => [...categories].sort((a, b) => a.sortOrder - b.sortOrder),
     [categories],
@@ -57,13 +62,19 @@ export function QuickExpenseForm({
     editing?.paymentMethod ?? defaultPaymentMethod ?? "credit",
   );
 
-  const activeCatName =
-    sortedCategories.find((c) => c.id === categoryId)?.name ?? "";
+  // 시트를 닫을 때는 먼저 닫힘 애니메이션을 재생하고, 끝난 뒤 호출부에 알린다.
+  const [open, setOpen] = useState(true);
+  const close = useCallback(() => setOpen(false), []);
+
+  // 닫힘 애니메이션이 끝난 뒤 실행할 후처리(삭제 요청 등)
+  const afterExitRef = useRef<(() => void) | null>(null);
+
+  const activeCatName = sortedCategories.find((c) => c.id === categoryId)?.name ?? "";
   const amountValue = parseInt(amount || "0", 10);
 
   const amountInputRef = useRef<HTMLInputElement>(null);
 
-  // Modal이 마운트 직후 패널로 포커스를 옮기므로, 그 뒤에 금액 입력으로 되돌린다.
+  // 시트가 열리며 포커스를 옮기므로, 그 뒤에 금액 입력으로 되돌린다.
   useEffect(() => {
     const id = requestAnimationFrame(() => {
       const input = amountInputRef.current;
@@ -85,91 +96,108 @@ export function QuickExpenseForm({
       date: editing?.date ?? defaultDate,
       memo: editing?.memo,
     });
-    onClose();
+    close();
   };
 
+  const requestDelete = () => {
+    if (!editing || !onRequestDelete) return;
+    afterExitRef.current = () => onRequestDelete(editing);
+    close();
+  };
+
+  const saveButton = (
+    <Button
+      color="primary"
+      display="block"
+      size="xlarge"
+      disabled={amountValue <= 0}
+      onClick={save}
+    >
+      {editing ? "저장" : "추가"}
+    </Button>
+  );
+
   return (
-    <Modal variant="sheet" labelledBy={titleId} onClose={onClose}>
-      <div className="sheet-panel">
-        <div className="sheet-head">
-          <span className="sheet-title" id={titleId}>
-            {editing ? "지출 수정" : "지출 추가"} · {activeCatName}
-          </span>
-          <button type="button" className="sheet-close" aria-label="닫기" onClick={onClose}>
-            ✕
-          </button>
-        </div>
-
-        <div className="amount-display">
-          <input
-            ref={amountInputRef}
-            className="amount-input"
-            type="text"
-            inputMode="numeric"
-            enterKeyHint="done"
-            autoComplete="off"
-            aria-label="금액"
-            placeholder="0"
-            value={amount === "" ? "" : Number(amount).toLocaleString("ko-KR")}
-            onChange={(e) => setAmount(toAmountDigits(e.target.value))}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault();
-                save();
-              }
-            }}
+    <BottomSheet
+      open={open}
+      hasTextField
+      onDimmerClick={close}
+      onExited={() => {
+        const after = afterExitRef.current;
+        afterExitRef.current = null;
+        onClose();
+        after?.();
+      }}
+      header={
+        <BottomSheet.Header>
+          {editing ? "지출 수정" : "지출 추가"}
+          {activeCatName ? ` · ${activeCatName}` : ""}
+        </BottomSheet.Header>
+      }
+      cta={
+        editing && onRequestDelete ? (
+          <BottomSheet.DoubleCTA
+            leftButton={
+              <Button color="light" display="block" size="xlarge" onClick={requestDelete}>
+                삭제
+              </Button>
+            }
+            rightButton={saveButton}
           />
-          <span className="amount-won">원</span>
-        </div>
+        ) : (
+          <BottomSheet.CTA disabled={amountValue <= 0} onClick={save}>
+            {editing ? "저장" : "추가"}
+          </BottomSheet.CTA>
+        )
+      }
+    >
+      <div className="sheet-body">
+        <TextField
+          ref={amountInputRef}
+          variant="hero"
+          type="text"
+          inputMode="numeric"
+          enterKeyHint="done"
+          autoComplete="off"
+          aria-label="금액"
+          placeholder="0"
+          suffix="원"
+          value={amount === "" ? "" : Number(amount).toLocaleString("ko-KR")}
+          onChange={(e) => setAmount(toAmountDigits(e.target.value))}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              save();
+            }
+          }}
+        />
 
-        <div className="pay-row" role="radiogroup" aria-label="결제수단">
-          <button
-            type="button"
-            className={`pay-btn ${paymentMethod === "credit" ? "active" : ""}`}
-            aria-pressed={paymentMethod === "credit"}
-            onClick={() => setPaymentMethod("credit")}
-          >
-            신용카드
-          </button>
-          <button
-            type="button"
-            className={`pay-btn ${paymentMethod === "debit" ? "active" : ""}`}
-            aria-pressed={paymentMethod === "debit"}
-            onClick={() => setPaymentMethod("debit")}
-          >
-            체크카드
-          </button>
-        </div>
+        <SegmentedControl
+          size="large"
+          alignment="fixed"
+          aria-label="결제수단"
+          value={paymentMethod}
+          onChange={(v) => setPaymentMethod(v as PaymentMethod)}
+        >
+          <SegmentedControl.Item value="credit">신용카드</SegmentedControl.Item>
+          <SegmentedControl.Item value="debit">체크카드</SegmentedControl.Item>
+        </SegmentedControl>
 
-        <div className="chip-row" role="radiogroup" aria-label="예산 항목">
+        <Chip wrap kind="select" margin="small" aria-label="예산 항목">
           {sortedCategories.map((c) => (
-            <button
+            <ChipItem
               key={c.id}
+              as="button"
               type="button"
-              className={`chip ${c.id === categoryId ? "active" : ""}`}
+              selected={c.id === categoryId}
               aria-pressed={c.id === categoryId}
               onClick={() => setCategoryId(c.id)}
             >
               {c.name}
-            </button>
+            </ChipItem>
           ))}
-        </div>
-
-        <div className="sheet-actions">
-          {editing && onRequestDelete && (
-            <button
-              type="button"
-              className="del-btn"
-              onClick={() => onRequestDelete(editing)}
-            >
-              삭제
-            </button>
-          )}
-          <button type="button" className="save-btn" onClick={save} disabled={amountValue <= 0}>
-            {editing ? "저장" : "추가"}
-          </button>
-        </div>
+        </Chip>
       </div>
-    </Modal>
+    </BottomSheet>
   );
 }

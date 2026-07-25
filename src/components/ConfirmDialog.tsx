@@ -1,5 +1,4 @@
-import { useId } from "react";
-import { Modal } from "./Modal";
+import { ConfirmDialog as TDSConfirmDialog } from "@toss/tds-mobile";
 
 interface ConfirmDialogProps {
   title: string;
@@ -11,7 +10,7 @@ interface ConfirmDialogProps {
   onCancel: () => void;
 }
 
-/** 삭제·초기화 등 파괴적 동작 전 확인 다이얼로그 */
+/** 삭제·초기화 등 파괴적 동작 전 확인 다이얼로그 (TDS ConfirmDialog 래퍼) */
 export function ConfirmDialog({
   title,
   message,
@@ -21,26 +20,25 @@ export function ConfirmDialog({
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
-  const titleId = useId();
-
   return (
-    <Modal variant="center" labelledBy={titleId} onClose={onCancel} className="confirm">
-      <div className="confirm-title" id={titleId}>
-        {title}
-      </div>
-      <p className="confirm-msg">{message}</p>
-      <div className="confirm-actions">
-        <button type="button" className="confirm-cancel" onClick={onCancel}>
+    <TDSConfirmDialog
+      open
+      title={title}
+      description={message}
+      onClose={onCancel}
+      cancelButton={
+        <TDSConfirmDialog.CancelButton onClick={onCancel}>
           {cancelLabel}
-        </button>
-        <button
-          type="button"
-          className={`confirm-ok ${danger ? "danger" : ""}`}
+        </TDSConfirmDialog.CancelButton>
+      }
+      confirmButton={
+        <TDSConfirmDialog.ConfirmButton
+          color={danger ? "danger" : "primary"}
           onClick={onConfirm}
         >
           {confirmLabel}
-        </button>
-      </div>
-    </Modal>
+        </TDSConfirmDialog.ConfirmButton>
+      }
+    />
   );
 }
