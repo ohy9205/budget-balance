@@ -1,5 +1,5 @@
 import { useSortable } from "@dnd-kit/react/sortable";
-import { ListRow, Menu, Paragraph, ProgressBar } from "@toss/tds-mobile";
+import { Border, ListRow, Menu, Paragraph, ProgressBar } from "@toss/tds-mobile";
 import { adaptive } from "@toss/tds-colors";
 import type { CategoryStats } from "../lib/calculations";
 import { formatCurrency, formatPercent, formatThousands } from "../lib/format";
@@ -104,6 +104,10 @@ export function CategoryCard({
           </div>
         }
       />
+
+      {/* 카드 사이 구분선 — 카드와 함께 끌려야 하므로 목록이 아니라 카드가 들고 있다.
+          마지막 카드 뒤는 index.css에서 숨긴다. */}
+      <Border variant="full" className="cat-divider" />
 
       {menu !== "closed" && (
         // 위치는 래퍼가 잡는다 — Menu.Dropdown 자신이 position: relative라

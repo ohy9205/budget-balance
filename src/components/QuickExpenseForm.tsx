@@ -137,34 +137,36 @@ export function QuickExpenseForm({
           }}
         />
 
-        <SegmentedControl
-          size="large"
-          alignment="fixed"
-          aria-label="결제수단"
-          value={paymentMethod}
-          onChange={(v) => setPaymentMethod(v as PaymentMethod)}
-        >
-          {PAYMENT_METHODS.map((m) => (
-            <SegmentedControl.Item key={m.value} value={m.value}>
-              {m.label}
-            </SegmentedControl.Item>
-          ))}
-        </SegmentedControl>
+        <div className="sheet-fields">
+          <SegmentedControl
+            size="large"
+            alignment="fixed"
+            aria-label="결제수단"
+            value={paymentMethod}
+            onChange={(v) => setPaymentMethod(v as PaymentMethod)}
+          >
+            {PAYMENT_METHODS.map((m) => (
+              <SegmentedControl.Item key={m.value} value={m.value}>
+                {m.label}
+              </SegmentedControl.Item>
+            ))}
+          </SegmentedControl>
 
-        <Chip wrap kind="select" margin="small" aria-label="예산 항목">
-          {sortedCategories.map((c) => (
-            <ChipItem
-              key={c.id}
-              as="button"
-              type="button"
-              selected={c.id === categoryId}
-              aria-pressed={c.id === categoryId}
-              onClick={() => setCategoryId(c.id)}
-            >
-              {c.name}
-            </ChipItem>
-          ))}
-        </Chip>
+          <Chip wrap kind="select" margin="small" className="sheet-chips" aria-label="예산 항목">
+            {sortedCategories.map((c) => (
+              <ChipItem
+                key={c.id}
+                as="button"
+                type="button"
+                selected={c.id === categoryId}
+                aria-pressed={c.id === categoryId}
+                onClick={() => setCategoryId(c.id)}
+              >
+                {c.name}
+              </ChipItem>
+            ))}
+          </Chip>
+        </div>
       </div>
     </BottomSheet>
   );

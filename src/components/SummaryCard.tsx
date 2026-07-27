@@ -37,36 +37,36 @@ export function SummaryCard({ data }: { data: MonthlyBudgetData }) {
         aria-valuemax={100}
         aria-valuenow={Math.round(summary.totalRate)}
         aria-label="전체 사용률"
+        style={
+          { "--bar-progress": `${toProgress(summary.totalRate) * 100}%` } as CSSProperties
+        }
       >
-        <ProgressBar
-          size="bold"
-          progress={toProgress(summary.totalRate)}
-          color={STATUS_COLOR[status]}
-        />
-        <span
-          className="summary-bar-badge"
-          style={
-            {
-              "--bar-progress": `${toProgress(summary.totalRate) * 100}%`,
-              background: STATUS_COLOR[status],
-            } as CSSProperties
-          }
-        >
-          <Paragraph typography="st13" fontWeight="bold" color={adaptive.background}>
-            <Paragraph.Text>{formatPercent(summary.totalRate)}</Paragraph.Text>
+        <div className="summary-bar-head">
+          <Paragraph typography="t7" color={adaptive.grey600}>
+            <Paragraph.Text>예산 {formatCurrency(summary.totalBudget)}</Paragraph.Text>
           </Paragraph>
-        </span>
-      </div>
-
-      <div className="summary-row">
-        <Paragraph typography="t7" color={adaptive.grey600}>
-          <Paragraph.Text>
-            사용 {formatCurrency(summary.totalUsed)}
-          </Paragraph.Text>
-        </Paragraph>
-        <Paragraph typography="t7" color={adaptive.grey600}>
-          <Paragraph.Text>예산 {formatCurrency(summary.totalBudget)}</Paragraph.Text>
-        </Paragraph>
+        </div>
+        <div className="summary-bar-track">
+          <ProgressBar
+            size="bold"
+            progress={toProgress(summary.totalRate)}
+            color={STATUS_COLOR[status]}
+          />
+          <span className="summary-bar-badge" style={{ background: STATUS_COLOR[status] }}>
+            <Paragraph typography="st13" fontWeight="bold" color={adaptive.background}>
+              <Paragraph.Text>{formatPercent(summary.totalRate)}</Paragraph.Text>
+            </Paragraph>
+          </span>
+          {/* 쓴 금액만 진하게, 라벨은 흐리게 */}
+          <span className="summary-bar-used">
+            <Paragraph typography="t7" color={adaptive.grey600}>
+              <Paragraph.Text>사용 </Paragraph.Text>
+              <Paragraph.Text fontWeight="semibold" color={adaptive.grey800}>
+                {formatCurrency(summary.totalUsed)}
+              </Paragraph.Text>
+            </Paragraph>
+          </span>
+        </div>
       </div>
 
       <div className="summary-foot">

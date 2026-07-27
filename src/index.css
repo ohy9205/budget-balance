@@ -1,6 +1,3 @@
-/* 토스 TDS Mobile 위에 얹는 레이아웃 전용 스타일시트.
-   색·타이포·모양은 TDS가 담당하고, 색이 필요하면 --adaptive* 변수만 참조한다. */
-
 * {
   box-sizing: border-box;
 }
@@ -36,12 +33,17 @@ body {
   overflow-x: hidden;
 }
 
+/* TopNavigation은 fixed(top/left/right: 0)라 width가 auto다 — 좌우 margin이 그대로 먹는다.
+   TDS가 margin은 건드리지 않으므로 className만 붙이면 된다. */
+.app-nav {
+  margin: 0 16px;
+}
+
 .app-main {
   /* 상단: fixed TopNavigation 높이 / 하단: FixedBottomCTA 높이 */
   padding: 50px 0 112px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
 }
 
 /* ── 섹션(회색 바닥 위의 흰 카드) ────────────────────────
@@ -58,6 +60,10 @@ body {
   background: var(--adaptiveBackground);
 }
 
+.section-card--flush-bottom {
+  padding-bottom: 0;
+}
+
 /* ── 상단 월 이동 ─────────────────────────────────────── */
 .month-nav {
   display: flex;
@@ -70,7 +76,6 @@ body {
 .summary {
   display: flex;
   flex-direction: column;
-  gap: 8px;
   margin: 0 16px;
   padding: 20px;
   border-radius: 20px;
@@ -84,33 +89,48 @@ body {
   gap: 8px;
 }
 
+/* 아래 여백은 트랙 밖으로 나가는 사용 금액 자리다 */
 .summary-bar {
-  position: relative;
   margin: 6px 0 2px;
+  padding-bottom: 32px;
+}
+
+/* 예산은 진행 바 위 오른쪽 끝에 둔다 */
+.summary-bar-head {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 8px;
+}
+
+/* 캡슐·사용 금액의 위치 기준은 컨테이너가 아니라 진행 바 자체다 */
+.summary-bar-track {
+  position: relative;
 }
 
 /*
- * 진행 바 끝에 붙는 사용률 캡슐.
- * translate 퍼센트는 자기 폭 기준이라 --bar-progress를 그대로 되돌리면
- * 0%에서는 왼쪽 끝, 100%에서는 오른쪽 끝에 딱 맞아 바 밖으로 넘치지 않는다.
- * 색(배경)은 상태색이라 statusTheme에서 인라인으로 받는다.
+ * 진행 바 끝에 붙는 사용률 캡슐과 그 아래 사용 금액.
  */
-.summary-bar-badge {
+.summary-bar-badge,
+.summary-bar-used {
   position: absolute;
-  top: 50%;
   left: var(--bar-progress);
-  transform: translate(calc(-1 * var(--bar-progress)), -50%);
-  padding: 2px 8px;
-  border-radius: 999px;
+  transform: translateX(calc(-1 * var(--bar-progress)));
+  width: max-content;
   white-space: nowrap;
   pointer-events: none;
 }
 
-.summary-row {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
+.summary-bar-badge {
+  top: 50%;
+  transform: translate(calc(-1 * var(--bar-progress)), -50%);
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+/* 캡슐이 트랙 아래로 절반쯤 내려오므로 그만큼 더 띄운다 */
+.summary-bar-used {
+  top: 100%;
+  margin-top: 8px;
 }
 
 .summary-foot {
@@ -136,7 +156,6 @@ body {
 .list-rows {
   display: flex;
   flex-direction: column;
-  gap: 10px;
 }
 
 /* ListRow를 button으로 렌더링하므로 버튼 기본 스타일을 지운다 */
@@ -162,6 +181,11 @@ body {
   -webkit-touch-callout: none;
 }
 
+/* 목록 끝에는 구분선을 두지 않는다 — 카드 면과 "+ 항목 추가" 사이는 이미 떨어져 있다 */
+.cat-sortable:last-child .cat-divider {
+  display: none;
+}
+
 /* 카드 오른쪽 위에 붙인다. 우측 여백 16px은 ListRow의 horizontalPadding과 맞춘 값이다. */
 .cat-menu {
   position: absolute;
@@ -184,7 +208,7 @@ body {
   width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  padding: 2px 0;
 }
 
 .cat-line {
@@ -192,6 +216,11 @@ body {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
+}
+
+/* 상단 줄(항목명·잔액)과 아래 줄(사용액·사용률)을 띄운다 */
+.cat-line:first-child {
+  padding-bottom: 10px;
 }
 
 /* 항목명 + 상태 뱃지 / 쓴 금액 + 예산·남은 횟수 — 각각 한 줄로 붙인다 */
@@ -207,18 +236,17 @@ body {
   gap: 4px;
 }
 
-/* 진행 바는 두 줄 아래에서 살짝 띄운다 */
-.cat-bar {
-  margin-top: 4px;
-}
-
 /* 목록 맨 아래 항목 추가 버튼 — 구분선은 카드 안쪽 행과 같은 16px 여백에 맞춘다 */
 .cat-add {
   display: flex;
   justify-content: center;
-  margin: 10px 16px 0;
+  margin: 0 16px;
   border-top: 1px solid var(--adaptiveHairlineBorder);
-  padding-top: 6px;
+  padding: 0;
+}
+
+.cat-bar {
+  margin-top: 6px;
 }
 
 .list-empty {
@@ -244,6 +272,18 @@ body {
   display: flex;
   flex-direction: column;
   padding: 4px 0 8px;
+}
+
+/* 결제수단·예산 항목은 한 묶음이다 — 간격은 각자의 padding이 아니라 gap으로 준다 */
+.sheet-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+}
+
+/* 예산 항목 칩 묶음 — Chip의 margin="small"(16px)에 8px을 더해 좌우 24px로 들인다 */
+.sheet-chips {
+  padding: 2px 8px;
 }
 
 /* ── 설정 화면 ────────────────────────────────────────── */

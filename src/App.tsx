@@ -59,6 +59,7 @@ function Dashboard() {
   return (
     <div className="app-shell">
       <TopNavigation
+        className="app-nav"
         fixed
         background="blur"
         content={<MonthSelector />}
@@ -112,7 +113,7 @@ function Dashboard() {
                   }
                 />
               </div>
-              <div className="section-card">
+              <div className="section-card section-card--flush-bottom">
                 <CategoryList
                   stats={stats}
                   onAddExpense={(categoryId) => setExpenseModal({ mode: "add", categoryId })}
