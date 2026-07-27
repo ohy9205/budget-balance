@@ -49,8 +49,13 @@ Three layers, deliberately separated:
    with scattered `useCallback`. (`previousMonthWithData` keeps its `useMemo` — it walks
    `store.months`.)
 3. **Presentation** — [src/App.tsx](src/App.tsx), [src/components/](src/components/),
-   [src/index.css](src/index.css). Components read state via `useBudget()` or receive it as props;
-   they never touch `localStorage` or recompute budget math themselves.
+   [src/hooks/](src/hooks/), [src/index.css](src/index.css). Components read state via `useBudget()`
+   or receive it as props; they never touch `localStorage` or recompute budget math themselves.
+   A component is JSX plus local form state — anything else is factored out: pure logic to layer 1,
+   and each state/effect/DOM concern to its own **single-responsibility hook** in
+   [src/hooks/](src/hooks/) (`useEscapeKey`, `useBodyScrollLock`, `useDeferredClose`,
+   `useSheetMaxHeight`, `useAutoFocus`). Don't merge those into one per-component "behavior" hook —
+   they are independent concerns and get reused separately.
 
 **UI work rewrites only the presentation layer; layers 1–2 are reused as-is.** Keep that split.
 
@@ -112,7 +117,9 @@ reload. Storage keys are versioned (`budget-balance:data:v1`, `budget-balance:pr
 - **색은 `adaptive`(`@toss/tds-colors`)에서만 가져온다.** `adaptive.grey900` 같은 값은 실제로는
   `var(--adaptiveGrey900)` 문자열이라 `style`/props 어디에나 넣을 수 있다. 새 hex를 만들지 않는다.
   상태색(여유/주의/위험/초과) 매핑은 [statusTheme.ts](src/components/statusTheme.ts) 한 곳에만 두고,
-  뱃지는 색(blue/yellow/red) + variant(weak/fill) 조합으로 위험과 초과를 구분한다.
+  뱃지는 색(blue/yellow/red) + variant(weak/fill) 조합으로 위험과 초과를 구분한다. 상태 뱃지는
+  [StatusBadge.tsx](src/components/StatusBadge.tsx)(`status` + `size`)를 쓴다 — 카드가 라벨·색 매핑을
+  직접 알 필요는 없다.
 - 타이포는 `Paragraph` / `ListRow.Text`의 `typography` 토큰을 쓴다. 크기는 t1=30px, t2=26, t3=22,
   t4=20, t5=17, t6=15, t7=13, st13=11px (전체 순서: t1 st1 st2 st3 t2 st4 st5 st6 t3 st7 t4 st8 st9
   t5 st10 t6 st11 t7 st12 st13 = 30→11px).
@@ -125,12 +132,16 @@ reload. Storage keys are versioned (`budget-balance:data:v1`, `budget-balance:pr
   내부 여백). 색·모양·타이포는 넣지 않는다. `.app-shell`의 `transform: translateZ(0)`는 일부러
   넣은 것 — TDS의 `TopNavigation fixed` / `FixedBottomCTA`가 뷰포트가 아니라 이 컬럼을 기준으로
   고정되게 하는 containing block이다. 지우면 데스크톱에서 화면 전체로 퍼진다.
-- **금액 입력은 전부 `type="text"` + `inputMode="numeric"`이고**, 표시할 때 `formatThousands`,
-  받을 때 `toAmountDigits`([format.ts](src/lib/format.ts))를 거친다 — `type="number"`나 TDS
-  `NumberKeypad`를 쓰지 않는다(키패드는 레이아웃에서 자리를 고정으로 차지해 본문을 누른다).
-  `toAmountDigits`가 숫자 외 문자·앞자리 0·9자리 초과를 잘라 내므로 새 금액 필드도 이 쌍을 쓴다.
-- 설정 화면의 항목 편집 `TextField`는 로컬 state 없이 `onChange`마다 `updateCategory`를 직접
-  호출한다(=키 입력마다 저장·재계산). 필드를 비우면 그 자리에서 예산이 0이 된다.
+- **금액 입력은 전부 [AmountField.tsx](src/components/AmountField.tsx)를 쓴다** — `TextField`를 직접
+  쓰지 않는다. 안에서 `type="text"` + `inputMode="numeric"`, 표시 `formatThousands`, 입력
+  `toAmountDigits`([format.ts](src/lib/format.ts))를 묶어 두었다(`type="number"`나 TDS
+  `NumberKeypad`는 쓰지 않는다 — 키패드는 레이아웃에서 자리를 고정으로 차지해 본문을 누른다).
+  in/out은 **숫자**다: `value: number | undefined`, `onChange(value: number | undefined)`이고
+  **빈 칸이 `undefined`** 다. 빈 칸과 0을 구분해야 하는 검증(예: 항목 추가 폼의 "예산 미입력")이
+  여기에 걸려 있으니 `?? 0`으로 뭉개지 말 것.
+- 설정 화면의 항목 편집 필드([CategoryEditRow.tsx](src/components/CategoryEditRow.tsx))는 로컬 state
+  없이 `onChange`마다 `updateCategory`를 직접 호출한다(=키 입력마다 저장·재계산). 필드를 비우면
+  그 자리에서 예산이 0이 된다.
 - 지출 시트가 실제로 편집하는 값은 **금액·항목·결제수단뿐**이다. `date`는 새 지출이면
   "현재 월이면 오늘, 아니면 그 달 1일", 수정이면 원본 유지고, `memo`는 타입·저장·정렬에는
   살아 있지만 입력 UI가 없다. 없는 게 아니라 화면에서 빠진 것이니 지우지 말 것.
@@ -141,19 +152,25 @@ reload. Storage keys are versioned (`budget-balance:data:v1`, `budget-balance:pr
   모달 프리미티브를 직접 만들지 않는다.
 - **예외는 설정 화면 하나뿐이다.** TDS `Modal`은 고정폭 카드라 전체 화면 페이지에 맞지 않아
   [SettingsModal.tsx](src/components/SettingsModal.tsx)는 `.settings-panel`(`position: fixed`)을
-  직접 그린다(현재 코드에 TDS `Modal` 사용처는 없다). 여기 엮여 있는 제약 세 가지:
+  직접 그린다(현재 코드에 TDS `Modal` 사용처는 없다). 이 파일은 셸(포털·상단바·스크롤 잠금·Esc)과
+  확인 다이얼로그 4종 조율만 담당하고, 내용은
+  [CategoryEditRow](src/components/CategoryEditRow.tsx) /
+  [AddCategoryForm](src/components/AddCategoryForm.tsx) /
+  [DataManagementSection](src/components/DataManagementSection.tsx)로 나뉘어 있다 —
+  `useBudget()`과 확인 상태는 부모에만 두고 자식엔 props·콜백만 내린다. 여기 엮여 있는 제약 세 가지:
   - `.app-shell`의 `transform`이 containing block이라 그 안에서는 `fixed`가 460px 컬럼에 갇힌다.
     그래서 `createPortal(..., document.body)`로 셸 밖에 붙인다 — 포털을 빼면 화면을 덮지 못한다.
   - `.settings-panel`의 `z-index: 9999`는 TDS 오버레이보다 **낮게** 둔 값이다. 확인 다이얼로그가
     설정 패널 위에 떠야 하므로 올리지 말 것.
-  - 포커스 트랩·스크롤 잠금·Esc 닫기를 TDS가 안 해 주므로 컴포넌트가 직접 처리한다
-    (`body.style.overflow`, `keydown` 리스너). 확인 다이얼로그가 떠 있으면 Esc를 그쪽에 양보한다.
+  - 포커스 트랩·스크롤 잠금·Esc 닫기를 TDS가 안 해 주므로 직접 처리한다 —
+    [useBodyScrollLock](src/hooks/useBodyScrollLock.ts) / [useEscapeKey](src/hooks/useEscapeKey.ts).
+    확인 다이얼로그가 떠 있으면 `useEscapeKey(onClose, confirm === null)`로 Esc를 그쪽에 양보한다.
 - `BottomSheet`는 닫힘 애니메이션 후 `onExited`가 불리므로, 시트를 닫고 이어서 할 일
   (예: 삭제 확인 다이얼로그 열기)은 `onExited` 뒤로 미룬다 —
-  [QuickExpenseForm.tsx](src/components/QuickExpenseForm.tsx)의 `afterExitRef` 참고. 같은 파일의
-  `useSheetMaxHeight`도 지우지 말 것: `BottomSheet`의 `maxHeight` prop은 마운트 시점 값으로 굳어서
-  키보드가 올라와도 안 줄어들기 때문에 `visualViewport` 크기를 `style`로 덮어써야 금액 입력이
-  키보드에 가리지 않는다.
+  [useDeferredClose](src/hooks/useDeferredClose.ts)의 `runAfterClose`가 그 흐름이다.
+  [useSheetMaxHeight](src/hooks/useSheetMaxHeight.ts)도 지우지 말 것: `BottomSheet`의 `maxHeight`
+  prop은 마운트 시점 값으로 굳어서 키보드가 올라와도 안 줄어들기 때문에 `visualViewport` 크기를
+  `style`로 덮어써야 금액 입력이 키보드에 가리지 않는다.
 
 ### README
 

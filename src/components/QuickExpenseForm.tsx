@@ -1,17 +1,14 @@
-import { useEffect, useRef, useState } from "react";
-import {
-  BottomSheet,
-  Button,
-  Chip,
-  ChipItem,
-  SegmentedControl,
-  TextField,
-} from "@toss/tds-mobile";
+import { useRef, useState } from "react";
+import { BottomSheet, Button, Chip, ChipItem, SegmentedControl } from "@toss/tds-mobile";
 import type { BudgetCategory, Expense, PaymentMethod } from "../types";
 import type { NewExpenseInput } from "../context/BudgetContext";
+import { PAYMENT_METHODS } from "../constants";
 import { sortByOrder } from "../lib/calculations";
 import { resolveInitialCategoryId } from "../lib/category";
-import { formatThousands, toAmountDigits } from "../lib/format";
+import { useAutoFocus } from "../hooks/useAutoFocus";
+import { useDeferredClose } from "../hooks/useDeferredClose";
+import { useSheetMaxHeight } from "../hooks/useSheetMaxHeight";
+import { AmountField } from "./AmountField";
 
 interface QuickExpenseFormProps {
   categories: BudgetCategory[];
@@ -24,37 +21,6 @@ interface QuickExpenseFormProps {
   /** 수정 모드의 삭제 버튼. 호출부가 확인 다이얼로그를 띄운다. */
   onRequestDelete?: (expense: Expense) => void;
   onClose: () => void;
-}
-
-/** 딤 영역을 눌러 닫을 수 있도록 시트 위쪽에 남겨 둘 여백 */
-const SHEET_TOP_GAP = 24;
-
-/**
- * 키보드 위로 실제 보이는 영역에 맞춰 시트 높이를 자른다.
- * TDS 기본 높이는 키보드가 떠도 줄지 않아 금액 입력이 화면 밖으로 밀린다.
- */
-function useSheetMaxHeight() {
-  const [maxHeight, setMaxHeight] = useState<number | null>(null);
-  // 비율 상한은 항상 "키보드가 없을 때"의 높이를 기준으로 잡는다.
-  const fullHeightRef = useRef(0);
-
-  useEffect(() => {
-    const update = () => {
-      const visible = window.visualViewport?.height ?? window.innerHeight;
-      fullHeightRef.current = Math.max(fullHeightRef.current, window.innerHeight);
-      setMaxHeight(Math.min(visible - SHEET_TOP_GAP, fullHeightRef.current * 0.7));
-    };
-
-    update();
-    window.visualViewport?.addEventListener("resize", update);
-    window.addEventListener("resize", update);
-    return () => {
-      window.visualViewport?.removeEventListener("resize", update);
-      window.removeEventListener("resize", update);
-    };
-  }, []);
-
-  return maxHeight;
 }
 
 /**
@@ -72,43 +38,25 @@ export function QuickExpenseForm({
   onClose,
 }: QuickExpenseFormProps) {
   const sortedCategories = sortByOrder(categories);
-  const initialCategoryId = resolveInitialCategoryId(
-    sortedCategories,
-    editing?.categoryId ?? defaultCategoryId,
-  );
 
-  const [amount, setAmount] = useState(editing ? String(editing.amount) : "");
-  const [categoryId, setCategoryId] = useState(initialCategoryId);
+  const [amount, setAmount] = useState<number | undefined>(editing?.amount);
+  const [categoryId, setCategoryId] = useState(() =>
+    resolveInitialCategoryId(sortedCategories, editing?.categoryId ?? defaultCategoryId),
+  );
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(
     editing?.paymentMethod ?? defaultPaymentMethod ?? "credit",
   );
 
-  // 닫힘 애니메이션을 재생한 뒤 호출부에 알리고, 후처리(삭제 요청 등)를 이어서 실행한다.
-  const [open, setOpen] = useState(true);
-  const close = () => setOpen(false);
-  const afterExitRef = useRef<(() => void) | null>(null);
-
-  const activeCatName = sortedCategories.find((c) => c.id === categoryId)?.name ?? "";
-  const amountValue = parseInt(amount || "0", 10);
-
-  const amountInputRef = useRef<HTMLInputElement>(null);
+  const { open, close, runAfterClose, onExited } = useDeferredClose(onClose);
   const sheetMaxHeight = useSheetMaxHeight();
+  const amountInputRef = useRef<HTMLInputElement>(null);
+  useAutoFocus(amountInputRef);
 
-  // 시트가 열리며 포커스를 옮기므로, 그 뒤에 금액 입력으로 되돌린다.
-  useEffect(() => {
-    const id = requestAnimationFrame(() => {
-      const input = amountInputRef.current;
-      if (!input) return;
-      input.focus();
-      const end = input.value.length;
-      input.setSelectionRange(end, end);
-    });
-    return () => cancelAnimationFrame(id);
-  }, []);
+  const amountValue = amount ?? 0;
+  const activeCatName = sortedCategories.find((c) => c.id === categoryId)?.name ?? "";
 
   const save = () => {
-    if (!amountValue || amountValue <= 0) return;
-    if (!categoryId) return;
+    if (amountValue <= 0 || !categoryId) return;
     onSubmit({
       categoryId,
       amount: amountValue,
@@ -121,8 +69,8 @@ export function QuickExpenseForm({
 
   const requestDelete = () => {
     if (!editing || !onRequestDelete) return;
-    afterExitRef.current = () => onRequestDelete(editing);
-    close();
+    // 시트가 닫힌 뒤에 확인 다이얼로그를 띄운다 (두 오버레이가 겹치지 않게)
+    runAfterClose(() => onRequestDelete(editing));
   };
 
   return (
@@ -132,12 +80,7 @@ export function QuickExpenseForm({
       /* `maxHeight` prop은 마운트 시점 값으로 굳으므로 style로 덮어쓴다 */
       style={sheetMaxHeight != null ? { maxHeight: sheetMaxHeight } : undefined}
       onDimmerClick={close}
-      onExited={() => {
-        const after = afterExitRef.current;
-        afterExitRef.current = null;
-        onClose();
-        after?.();
-      }}
+      onExited={onExited}
       header={
         <BottomSheet.Header>
           {editing ? "지출 수정" : "지출 추가"}
@@ -178,18 +121,16 @@ export function QuickExpenseForm({
       }
     >
       <div className="sheet-body">
-        <TextField
+        <AmountField
           ref={amountInputRef}
           variant="hero"
-          type="text"
-          inputMode="numeric"
           enterKeyHint="done"
           autoComplete="off"
           aria-label="금액"
           placeholder="0"
           suffix="원"
-          value={formatThousands(amount)}
-          onChange={(e) => setAmount(toAmountDigits(e.target.value))}
+          value={amount}
+          onChange={setAmount}
           onKeyDown={(e) => {
             if (e.key === "Enter") {
               e.preventDefault();
@@ -205,8 +146,11 @@ export function QuickExpenseForm({
           value={paymentMethod}
           onChange={(v) => setPaymentMethod(v as PaymentMethod)}
         >
-          <SegmentedControl.Item value="credit">신용카드</SegmentedControl.Item>
-          <SegmentedControl.Item value="debit">체크카드</SegmentedControl.Item>
+          {PAYMENT_METHODS.map((m) => (
+            <SegmentedControl.Item key={m.value} value={m.value}>
+              {m.label}
+            </SegmentedControl.Item>
+          ))}
         </SegmentedControl>
 
         <Chip wrap kind="select" margin="small" aria-label="예산 항목">

@@ -46,28 +46,25 @@ export function resolveInitialCategoryId(
   return categories[0]?.id ?? "";
 }
 
-/** 항목 추가 폼의 입력값. 금액은 `toAmountDigits`를 거친 숫자 문자열이다. */
+/** 항목 추가 폼의 입력값. 금액 칸이 비어 있으면 undefined다(`AmountField`가 그렇게 준다). */
 export interface NewCategoryFields {
   name: string;
-  monthlyBudget: string;
-  targetExpenseAmount: string;
+  monthlyBudget: number | undefined;
+  targetExpenseAmount: number | undefined;
 }
 
 /** 폼 입력 → `addCategory` 입력값. 항목을 만들 수 없으면 null */
 export function buildNewCategoryInput(fields: NewCategoryFields): NewCategoryInput | null {
   const name = fields.name.trim();
-  const budgetDigits = fields.monthlyBudget.trim();
-  if (!name || budgetDigits === "") return null;
-
-  const monthlyBudget = Number(budgetDigits);
+  const { monthlyBudget, targetExpenseAmount: target } = fields;
+  if (!name || monthlyBudget === undefined) return null;
   if (!Number.isFinite(monthlyBudget) || monthlyBudget < 0) return null;
 
-  // 목표액은 선택 입력 — 비었거나 0 이하면 "없음"
-  const target = Number(fields.targetExpenseAmount.trim());
   return {
     name,
     monthlyBudget: Math.round(monthlyBudget),
-    targetExpenseAmount: target > 0 ? Math.round(target) : undefined,
+    // 목표액은 선택 입력 — 없거나 0 이하면 "없음"
+    targetExpenseAmount: target && target > 0 ? Math.round(target) : undefined,
   };
 }
 

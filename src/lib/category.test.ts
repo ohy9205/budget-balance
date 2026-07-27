@@ -26,8 +26,8 @@ const fromSeed = (patch: Partial<BudgetCategory> = {}): BudgetCategory => ({
 
 const fields = (patch: Partial<NewCategoryFields> = {}): NewCategoryFields => ({
   name: "새 항목",
-  monthlyBudget: "50000",
-  targetExpenseAmount: "",
+  monthlyBudget: 50000,
+  targetExpenseAmount: undefined,
   ...patch,
 });
 
@@ -126,26 +126,30 @@ describe("buildNewCategoryInput", () => {
   });
 
   it("목표액을 넣으면 함께 담는다", () => {
-    expect(buildNewCategoryInput(fields({ targetExpenseAmount: "25000" }))?.targetExpenseAmount).toBe(
-      25000,
-    );
+    expect(
+      buildNewCategoryInput(fields({ targetExpenseAmount: 25000 }))?.targetExpenseAmount,
+    ).toBe(25000);
   });
 
   it("목표액이 비었거나 0이면 undefined", () => {
-    expect(buildNewCategoryInput(fields({ targetExpenseAmount: "" }))?.targetExpenseAmount).toBeUndefined();
-    expect(buildNewCategoryInput(fields({ targetExpenseAmount: "0" }))?.targetExpenseAmount).toBeUndefined();
+    expect(
+      buildNewCategoryInput(fields({ targetExpenseAmount: undefined }))?.targetExpenseAmount,
+    ).toBeUndefined();
+    expect(
+      buildNewCategoryInput(fields({ targetExpenseAmount: 0 }))?.targetExpenseAmount,
+    ).toBeUndefined();
   });
 
   it("예산 0은 유효한 항목", () => {
-    expect(buildNewCategoryInput(fields({ monthlyBudget: "0" }))?.monthlyBudget).toBe(0);
+    expect(buildNewCategoryInput(fields({ monthlyBudget: 0 }))?.monthlyBudget).toBe(0);
   });
 
   it("이름이 비면 null", () => {
     expect(buildNewCategoryInput(fields({ name: "   " }))).toBeNull();
   });
 
-  it("월 예산이 비면 null", () => {
-    expect(buildNewCategoryInput(fields({ monthlyBudget: "" }))).toBeNull();
+  it("월 예산 칸이 비면 null", () => {
+    expect(buildNewCategoryInput(fields({ monthlyBudget: undefined }))).toBeNull();
   });
 });
 
@@ -154,8 +158,8 @@ describe("isValidNewCategory", () => {
     expect(isValidNewCategory(fields())).toBe(true);
   });
 
-  it("이름이나 월 예산이 비면 false", () => {
+  it("이름이나 월 예산 칸이 비면 false", () => {
     expect(isValidNewCategory(fields({ name: "" }))).toBe(false);
-    expect(isValidNewCategory(fields({ monthlyBudget: "" }))).toBe(false);
+    expect(isValidNewCategory(fields({ monthlyBudget: undefined }))).toBe(false);
   });
 });

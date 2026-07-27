@@ -1,15 +1,15 @@
-import { Badge, Paragraph, ProgressBar } from "@toss/tds-mobile";
+import { Paragraph, ProgressBar } from "@toss/tds-mobile";
 import { adaptive } from "@toss/tds-colors";
 import type { MonthlyBudgetData } from "../types";
-import { STATUS_LABEL, monthlySummary, projection, statusFromUsageRate } from "../lib/calculations";
+import { monthlySummary, projection, statusFromUsageRate } from "../lib/calculations";
 import { formatCurrency, formatPercent } from "../lib/format";
-import { STATUS_BADGE, STATUS_COLOR, toProgress } from "./statusTheme";
+import { StatusBadge } from "./StatusBadge";
+import { STATUS_COLOR, toProgress } from "./statusTheme";
 
 export function SummaryCard({ data }: { data: MonthlyBudgetData }) {
   const summary = monthlySummary(data);
   const proj = projection(data);
   const status = statusFromUsageRate(summary.totalRate);
-  const badge = STATUS_BADGE[status];
   const over = summary.totalRemaining < 0;
 
   return (
@@ -18,9 +18,7 @@ export function SummaryCard({ data }: { data: MonthlyBudgetData }) {
         <Paragraph typography="t7" color={adaptive.grey600} fontWeight="medium">
           <Paragraph.Text>이번 달 남은 금액</Paragraph.Text>
         </Paragraph>
-        <Badge size="small" variant={badge.variant} color={badge.color}>
-          {STATUS_LABEL[status]}
-        </Badge>
+        <StatusBadge status={status} />
       </div>
 
       <Paragraph
