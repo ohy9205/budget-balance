@@ -3,6 +3,8 @@ import { ListHeader, ListRow, Paragraph, TextButton } from "@toss/tds-mobile";
 import { adaptive } from "@toss/tds-colors";
 import type { BudgetCategory, Expense } from "../types";
 import { paymentMethodLabel } from "../constants";
+import { buildCategoryNameLookup } from "../lib/category";
+import { sortExpensesByRecency } from "../lib/expense";
 import { formatCurrency, formatDateLabel } from "../lib/format";
 
 interface RecentExpensesProps {
@@ -17,16 +19,8 @@ const RECENT_LIMIT = 6;
 export function RecentExpenses({ expenses, categories, onEdit }: RecentExpensesProps) {
   const [open, setOpen] = useState(true);
 
-  const nameById = new Map(categories.map((c) => [c.id, c.name]));
-  const categoryName = (id: string) => nameById.get(id) ?? "(삭제된 항목)";
-
-  // 최신순: createdAt 내림차순 (동률이면 date 내림차순)
-  const recent = [...expenses]
-    .sort((a, b) => {
-      if (a.createdAt !== b.createdAt) return a.createdAt < b.createdAt ? 1 : -1;
-      return a.date < b.date ? 1 : -1;
-    })
-    .slice(0, RECENT_LIMIT);
+  const categoryName = buildCategoryNameLookup(categories);
+  const recent = sortExpensesByRecency(expenses).slice(0, RECENT_LIMIT);
 
   return (
     <section aria-label="최근 지출">

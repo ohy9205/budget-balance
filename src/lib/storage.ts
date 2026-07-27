@@ -13,6 +13,7 @@ import {
   STORAGE_KEY,
   STORE_VERSION,
 } from "../constants";
+import { sortByOrder } from "./calculations";
 import { isValidMonthKey } from "./date";
 
 function newId(): string {
@@ -162,18 +163,15 @@ export function createSeededMonth(month: string): MonthlyBudgetData {
 export function copyBudgetFrom(source: MonthlyBudgetData, targetMonth: string): MonthlyBudgetData {
   return {
     month: targetMonth,
-    categories: source.categories
-      .slice()
-      .sort((a, b) => a.sortOrder - b.sortOrder)
-      .map((c) => ({
-        id: newId(),
-        name: c.name,
-        monthlyBudget: c.monthlyBudget,
-        targetExpenseAmount: c.targetExpenseAmount,
-        sortOrder: c.sortOrder,
-        // 기본 항목 여부는 월을 넘어가도 유지된다 (id만 새로 발급)
-        seedKey: c.seedKey,
-      })),
+    categories: sortByOrder(source.categories).map((c) => ({
+      id: newId(),
+      name: c.name,
+      monthlyBudget: c.monthlyBudget,
+      targetExpenseAmount: c.targetExpenseAmount,
+      sortOrder: c.sortOrder,
+      // 기본 항목 여부는 월을 넘어가도 유지된다 (id만 새로 발급)
+      seedKey: c.seedKey,
+    })),
     expenses: [],
   };
 }

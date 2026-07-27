@@ -9,6 +9,8 @@ import {
 } from "@toss/tds-mobile";
 import type { BudgetCategory, Expense, PaymentMethod } from "../types";
 import type { NewExpenseInput } from "../context/BudgetContext";
+import { sortByOrder } from "../lib/calculations";
+import { resolveInitialCategoryId } from "../lib/category";
 import { formatThousands, toAmountDigits } from "../lib/format";
 
 interface QuickExpenseFormProps {
@@ -69,14 +71,11 @@ export function QuickExpenseForm({
   onRequestDelete,
   onClose,
 }: QuickExpenseFormProps) {
-  const sortedCategories = [...categories].sort((a, b) => a.sortOrder - b.sortOrder);
-
-  const firstCategoryId = sortedCategories[0]?.id ?? "";
-  const preferredCategoryId = editing?.categoryId ?? defaultCategoryId;
-  const initialCategoryId =
-    preferredCategoryId && sortedCategories.some((c) => c.id === preferredCategoryId)
-      ? preferredCategoryId
-      : firstCategoryId;
+  const sortedCategories = sortByOrder(categories);
+  const initialCategoryId = resolveInitialCategoryId(
+    sortedCategories,
+    editing?.categoryId ?? defaultCategoryId,
+  );
 
   const [amount, setAmount] = useState(editing ? String(editing.amount) : "");
   const [categoryId, setCategoryId] = useState(initialCategoryId);

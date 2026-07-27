@@ -3,8 +3,10 @@ import type { MonthlyBudgetData } from "../types";
 import {
   allCategoryStats,
   categoryStats,
+  computeUsageRate,
   monthlySummary,
   projection,
+  sortByOrder,
   statusFromUsageRate,
 } from "./calculations";
 import { formatCurrency, formatPercent } from "./format";
@@ -25,6 +27,36 @@ const exp = (
   paymentMethod: "credit" | "debit" = "credit",
   date = "2026-07-10",
 ) => ({ id, categoryId, amount, paymentMethod, date, createdAt: `${date}T00:00:00.000Z` });
+
+describe("sortByOrder", () => {
+  it("sortOrder 오름차순 정렬", () => {
+    const items = [cat("b", 1, undefined, 2), cat("a", 1, undefined, 0), cat("c", 1, undefined, 1)];
+    expect(sortByOrder(items).map((i) => i.id)).toEqual(["a", "c", "b"]);
+  });
+
+  it("원본 배열을 바꾸지 않는다", () => {
+    const items = [cat("b", 1, undefined, 1), cat("a", 1, undefined, 0)];
+    sortByOrder(items);
+    expect(items.map((i) => i.id)).toEqual(["b", "a"]);
+  });
+});
+
+describe("computeUsageRate", () => {
+  it("예산이 있으면 사용액÷예산×100", () => {
+    expect(computeUsageRate(40000, 100000)).toBeCloseTo(40);
+    expect(computeUsageRate(0, 100000)).toBe(0);
+  });
+
+  it("예산 0 + 지출 있으면 Infinity 대신 100+사용액", () => {
+    expect(computeUsageRate(5000, 0)).toBe(5100);
+    expect(Number.isFinite(computeUsageRate(5000, 0))).toBe(true);
+    expect(statusFromUsageRate(computeUsageRate(5000, 0))).toBe("over");
+  });
+
+  it("예산 0 + 지출 0이면 0", () => {
+    expect(computeUsageRate(0, 0)).toBe(0);
+  });
+});
 
 describe("statusFromUsageRate 경계값", () => {
   it("<60 여유", () => expect(statusFromUsageRate(0)).toBe("safe"));

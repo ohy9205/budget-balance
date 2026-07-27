@@ -4,10 +4,12 @@ import type {
   BudgetStore,
   Expense,
   MonthlyBudgetData,
+  NewCategoryInput,
   PaymentMethod,
   Prefs,
 } from "../types";
 import { findCategorySeed } from "../constants";
+import { sortByOrder } from "../lib/calculations";
 import { getMonthKey } from "../lib/date";
 import {
   copyBudgetFrom,
@@ -45,7 +47,7 @@ export interface BudgetContextValue {
   updateExpense: (id: string, input: NewExpenseInput) => void;
   deleteExpense: (id: string) => void;
 
-  addCategory: (data: { name: string; monthlyBudget: number; targetExpenseAmount?: number }) => void;
+  addCategory: (input: NewCategoryInput) => void;
   /** `seedKey`는 기본값을 찾아가는 참조이므로 수정 대상에서 제외한다 */
   updateCategory: (id: string, patch: Partial<Omit<BudgetCategory, "id" | "seedKey">>) => void;
   deleteCategory: (id: string) => void;
@@ -172,11 +174,7 @@ export function BudgetProvider({ children }: { children: ReactNode }) {
     mutateMonth((data) => ({ ...data, expenses: data.expenses.filter((e) => e.id !== id) }));
   }
 
-  function addCategory(input: {
-    name: string;
-    monthlyBudget: number;
-    targetExpenseAmount?: number;
-  }) {
+  function addCategory(input: NewCategoryInput) {
     mutateMonth((data) => {
       const maxOrder = data.categories.reduce((m, c) => Math.max(m, c.sortOrder), -1);
       const category: BudgetCategory = {
@@ -212,7 +210,7 @@ export function BudgetProvider({ children }: { children: ReactNode }) {
 
   function moveCategory(id: string, direction: "up" | "down") {
     mutateMonth((data) => {
-      const sorted = [...data.categories].sort((a, b) => a.sortOrder - b.sortOrder);
+      const sorted = sortByOrder(data.categories);
       const idx = sorted.findIndex((c) => c.id === id);
       if (idx === -1) return data;
       const swapWith = direction === "up" ? idx - 1 : idx + 1;

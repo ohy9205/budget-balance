@@ -21,9 +21,10 @@ There is no lint script and no ESLint config (the lone `eslint-disable` comment 
 [BudgetContext.tsx](src/context/BudgetContext.tsx) is vestigial). `npm run build` — tsc with
 `strict`, `noUnusedLocals`, `noUnusedParameters` — is the only static check.
 
-The suite is [calculations.test.ts](src/lib/calculations.test.ts) alone (20 tests over
-`calculations.ts`, `format.ts`, `date.ts`) running with `environment: "node"`. There is no jsdom,
-Testing Library, or setup file, so adding a component test means adding that config first.
+The suite is three files under [src/lib/](src/lib/) (50 tests) running with `environment: "node"`:
+[calculations.test.ts](src/lib/calculations.test.ts) (also covers `format.ts` / `date.ts`),
+[category.test.ts](src/lib/category.test.ts), [expense.test.ts](src/lib/expense.test.ts). There is
+no jsdom, Testing Library, or setup file, so adding a component test means adding that config first.
 
 ## Architecture
 
@@ -33,8 +34,12 @@ Personal single-user monthly budget app. No server, no DB, no auth — everythin
 Three layers, deliberately separated:
 
 1. **Pure logic** — [src/lib/](src/lib/) + [types.ts](src/types.ts) + [constants.ts](src/constants.ts).
-   No React, no DOM (except `storage.ts` touching `localStorage`). `calculations.ts`, `date.ts`,
-   `format.ts` are pure functions, and this is the only layer with tests.
+   No React, no DOM (except `storage.ts` touching `localStorage`). `calculations.ts` (budget math),
+   `category.ts` / `expense.ts` (domain rules pulled out of components), `date.ts`, `format.ts` are
+   pure functions, and this is the only layer with tests. **Logic a component needs but React does
+   not belongs here, not in the component** — e.g. `categoryDefaultDiff`, `resolveInitialCategoryId`,
+   `buildNewCategoryInput`, `buildCategoryNameLookup`, `sortExpensesByRecency`. DOM-touching helpers
+   (Blob download, viewport measuring) are the exception and stay next to the component.
 2. **State** — [src/context/BudgetContext.tsx](src/context/BudgetContext.tsx). Holds the whole
    `BudgetStore` plus `currentMonth` and `prefs`; every mutation goes through `mutateMonth`, which
    is a no-op when the selected month has no data. Two `useEffect`s persist store/prefs on any change.
@@ -85,7 +90,10 @@ reload. Storage keys are versioned (`budget-balance:data:v1`, `budget-balance:pr
   Thresholds live in `STATUS_THRESHOLDS`; the UI maps the four statuses to TDS colors in
   [statusTheme.ts](src/components/statusTheme.ts).
 - Zero-budget-with-spending is deliberately reported as `100 + used` rather than `Infinity`, so it
-  sorts as "over" without breaking formatting.
+  sorts as "over" without breaking formatting. That rule lives **only** in `computeUsageRate`
+  (used by both `categoryStats` and `monthlySummary`) — don't re-inline it.
+- `sortByOrder()` is the single `sortOrder` comparator (categories are always displayed ascending);
+  it copies before sorting, so callers never mutate store arrays.
 - `projection()` returns **`null` for any month that isn't the current month**; callers must handle
   null rather than render a meaningless forecast. It accepts an injectable `today: Date` — tests rely
   on this, so keep the parameter when editing.

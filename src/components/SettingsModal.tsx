@@ -13,9 +13,15 @@ import {
 import { adaptive } from "@toss/tds-colors";
 import type { BudgetCategory } from "../types";
 import { useBudget } from "../context/BudgetContext";
-import { findCategorySeed } from "../constants";
+import { sortByOrder } from "../lib/calculations";
+import {
+  buildNewCategoryInput,
+  categoryDefaultDiff,
+  isValidNewCategory,
+  type NewCategoryFields,
+} from "../lib/category";
 import { formatMonthLabel } from "../lib/date";
-import { formatCurrency, formatThousands, toAmountDigits } from "../lib/format";
+import { formatThousands, toAmountDigits } from "../lib/format";
 import { exportStoreJSON, parseImportedJSON } from "../lib/storage";
 import { ConfirmDialog } from "./ConfirmDialog";
 
@@ -28,25 +34,6 @@ type PendingConfirm =
   | { kind: "resetCategory"; category: BudgetCategory; changes: string[] }
   | { kind: "resetMonth" }
   | { kind: "import"; store: ReturnType<typeof parseImportedJSON> };
-
-/** 기본 예산값과 달라진 설정만 "월 예산 270,000원" 형태로 나열 (기본 항목이 아니거나 같으면 빈 배열) */
-function defaultDiff(c: BudgetCategory): string[] {
-  const seed = findCategorySeed(c.seedKey);
-  if (!seed) return [];
-  const parts: string[] = [];
-  if (c.name !== seed.name) parts.push(`이름 ${seed.name}`);
-  if (c.monthlyBudget !== seed.monthlyBudget) {
-    parts.push(`월 예산 ${formatCurrency(seed.monthlyBudget)}`);
-  }
-  if (c.targetExpenseAmount !== seed.targetExpenseAmount) {
-    parts.push(
-      `목표 1회 지출액 ${
-        seed.targetExpenseAmount ? formatCurrency(seed.targetExpenseAmount) : "없음"
-      }`,
-    );
-  }
-  return parts;
-}
 
 export function SettingsModal({ onClose }: SettingsModalProps) {
   const {
@@ -71,22 +58,18 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
   const [newBudget, setNewBudget] = useState("");
   const [newTarget, setNewTarget] = useState("");
 
-  const categories = monthData
-    ? [...monthData.categories].sort((a, b) => a.sortOrder - b.sortOrder)
-    : [];
+  const categories = monthData ? sortByOrder(monthData.categories) : [];
 
-  const addDisabled = !newName.trim() || newBudget.trim() === "";
+  const newFields: NewCategoryFields = {
+    name: newName,
+    monthlyBudget: newBudget,
+    targetExpenseAmount: newTarget,
+  };
 
   const handleAdd = () => {
-    const name = newName.trim();
-    const budget = Number(newBudget);
-    if (!name || !Number.isFinite(budget) || budget < 0) return;
-    const target = newTarget.trim() === "" ? undefined : Number(newTarget);
-    addCategory({
-      name,
-      monthlyBudget: Math.round(budget),
-      targetExpenseAmount: target && target > 0 ? Math.round(target) : undefined,
-    });
+    const input = buildNewCategoryInput(newFields);
+    if (!input) return;
+    addCategory(input);
     setNewName("");
     setNewBudget("");
     setNewTarget("");
@@ -176,7 +159,7 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
             ) : (
               <div className="cat-edit-list">
                 {categories.map((c, idx) => {
-                  const changes = defaultDiff(c);
+                  const changes = categoryDefaultDiff(c);
                   return (
                     <div key={c.id}>
                       <div className="cat-edit-row">
@@ -316,7 +299,7 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
                   <Button
                     display="block"
                     size="large"
-                    disabled={addDisabled}
+                    disabled={!isValidNewCategory(newFields)}
                     onClick={handleAdd}
                   >
                     추가

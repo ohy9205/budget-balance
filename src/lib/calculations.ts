@@ -2,6 +2,11 @@ import type { BudgetCategory, Expense, MonthlyBudgetData, PaymentMethod } from "
 import { STATUS_THRESHOLDS } from "../constants";
 import { daysInMonth, isCurrentMonth } from "./date";
 
+/** `sortOrder` 오름차순으로 정렬한 새 배열 (원본은 그대로 둔다) */
+export function sortByOrder<T extends { sortOrder: number }>(items: T[]): T[] {
+  return [...items].sort((a, b) => a.sortOrder - b.sortOrder);
+}
+
 export type BudgetStatus = "safe" | "caution" | "warning" | "over";
 
 export const STATUS_LABEL: Record<BudgetStatus, string> = {
@@ -20,6 +25,16 @@ export function statusFromUsageRate(usageRate: number): BudgetStatus {
   if (usageRate >= STATUS_THRESHOLDS.warning) return "warning";
   if (usageRate >= STATUS_THRESHOLDS.caution) return "caution";
   return "safe";
+}
+
+/**
+ * 사용률(%) = 사용액 ÷ 예산 × 100.
+ * 예산이 0인데 지출이 있으면 Infinity 대신 `100 + 사용액`을 반환해
+ * 포맷을 깨지 않으면서 "초과"로 정렬되게 한다.
+ */
+export function computeUsageRate(used: number, budget: number): number {
+  if (budget > 0) return (used / budget) * 100;
+  return used > 0 ? 100 + used : 0;
 }
 
 /** 특정 항목의 총 사용액 */
@@ -48,14 +63,7 @@ export function categoryStats(category: BudgetCategory, expenses: Expense[]): Ca
   const budget = category.monthlyBudget;
   const used = categoryUsed(expenses, category.id);
   const remaining = budget - used;
-
-  let usageRate: number;
-  if (budget > 0) {
-    usageRate = (used / budget) * 100;
-  } else {
-    usageRate = used > 0 ? 100 + used : 0; // 예산 0인데 지출이 있으면 "초과"로 취급
-  }
-
+  const usageRate = computeUsageRate(used, budget);
   const status = statusFromUsageRate(usageRate);
 
   let remainingCount: number | undefined;
@@ -68,9 +76,7 @@ export function categoryStats(category: BudgetCategory, expenses: Expense[]): Ca
 
 /** 정렬된 항목 통계 목록 */
 export function allCategoryStats(data: MonthlyBudgetData): CategoryStats[] {
-  return [...data.categories]
-    .sort((a, b) => a.sortOrder - b.sortOrder)
-    .map((c) => categoryStats(c, data.expenses));
+  return sortByOrder(data.categories).map((c) => categoryStats(c, data.expenses));
 }
 
 export interface MonthlySummary {
@@ -86,7 +92,7 @@ export function monthlySummary(data: MonthlyBudgetData): MonthlySummary {
   const totalBudget = data.categories.reduce((s, c) => s + c.monthlyBudget, 0);
   const totalUsed = data.expenses.reduce((s, e) => s + e.amount, 0);
   const totalRemaining = totalBudget - totalUsed;
-  const totalRate = totalBudget > 0 ? (totalUsed / totalBudget) * 100 : totalUsed > 0 ? 100 + totalUsed : 0;
+  const totalRate = computeUsageRate(totalUsed, totalBudget);
 
   const usedByMethod: Record<PaymentMethod, number> = { credit: 0, debit: 0 };
   for (const e of data.expenses) {

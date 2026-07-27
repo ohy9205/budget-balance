@@ -42,6 +42,13 @@ export interface BudgetStore {
   months: Record<string, MonthlyBudgetData>;
 }
 
+/** 항목 추가 입력값 (금액은 정수 원 단위) */
+export interface NewCategoryInput {
+  name: string;
+  monthlyBudget: number;
+  targetExpenseAmount?: number;
+}
+
 /** 최근 사용 값 기억 (빠른 입력 편의) */
 export interface Prefs {
   lastCategoryId?: string;
