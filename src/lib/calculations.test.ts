@@ -130,12 +130,11 @@ describe("projection (현재 월만)", () => {
     expenses: [exp("1", "a", 100000)],
   };
 
-  it("현재 월: 하루평균·예상사용·예상잔액", () => {
+  it("현재 월: 예상 월말 잔액", () => {
     const today = new Date(2026, 6, 10); // 7월 10일, 31일 달
     const p = projection(data, today)!;
-    expect(p.dailyAverage).toBeCloseTo(10000); // 100000 / 10
-    expect(p.projectedUsed).toBeCloseTo(310000); // 10000 * 31
-    expect(p.projectedRemaining).toBeCloseTo(0); // 310000 - 310000
+    // 하루 평균 100000/10 = 10000 → 예상 사용 10000*31 = 310000 → 예산 310000 - 310000
+    expect(p.projectedRemaining).toBeCloseTo(0);
   });
 
   it("과거/미래 월이면 null", () => {

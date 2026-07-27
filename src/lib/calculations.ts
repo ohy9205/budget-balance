@@ -99,10 +99,6 @@ export function monthlySummary(data: MonthlyBudgetData): MonthlySummary {
 }
 
 export interface Projection {
-  /** 현재까지 하루 평균 지출액 */
-  dailyAverage: number;
-  /** 현재 속도 유지 시 예상 월말 사용액 */
-  projectedUsed: number;
   /** 예상 월말 잔액 = 전체 예산 - 예상 월말 사용액 */
   projectedRemaining: number;
 }
@@ -123,5 +119,5 @@ export function projection(data: MonthlyBudgetData, today: Date = new Date()): P
   const projectedUsed = dailyAverage * totalDays;
   const projectedRemaining = summary.totalBudget - projectedUsed;
 
-  return { dailyAverage, projectedUsed, projectedRemaining };
+  return { projectedRemaining };
 }
