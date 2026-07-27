@@ -12,16 +12,18 @@ npm test             # vitest run (all tests)
 npm run test:watch   # vitest watch mode
 ```
 
-Single test / subset:
-
 ```bash
 npx vitest run src/lib/calculations.test.ts
-npx vitest run -t "projection"        # match describe/it name (Korean names are used, e.g. -t "경계값")
+npx vitest run -t "경계값"     # describe/it 이름으로 필터 — 테스트 이름은 한국어다
 ```
 
-There is no lint script and no ESLint config — the lone `eslint-disable` comment in
-[BudgetContext.tsx](src/context/BudgetContext.tsx) is vestigial. `npm run build` (tsc with `strict`,
-`noUnusedLocals`, `noUnusedParameters`) is the only static check.
+There is no lint script and no ESLint config (the lone `eslint-disable` comment in
+[BudgetContext.tsx](src/context/BudgetContext.tsx) is vestigial). `npm run build` — tsc with
+`strict`, `noUnusedLocals`, `noUnusedParameters` — is the only static check.
+
+The suite is [calculations.test.ts](src/lib/calculations.test.ts) alone (25 tests over
+`calculations.ts`, `format.ts`, `date.ts`) running with `environment: "node"`. There is no jsdom,
+Testing Library, or setup file, so adding a component test means adding that config first.
 
 ## Architecture
 
@@ -31,9 +33,8 @@ Personal single-user monthly budget app. No server, no DB, no auth — everythin
 Three layers, deliberately separated:
 
 1. **Pure logic** — [src/lib/](src/lib/) + [types.ts](src/types.ts) + [constants.ts](src/constants.ts).
-   No React, no DOM (except `storage.ts` touching `localStorage`). All of `calculations.ts`,
-   `date.ts`, `format.ts` are pure functions; this is the only layer with tests
-   ([calculations.test.ts](src/lib/calculations.test.ts), 25 tests, `environment: "node"`).
+   No React, no DOM (except `storage.ts` touching `localStorage`). `calculations.ts`, `date.ts`,
+   `format.ts` are pure functions, and this is the only layer with tests.
 2. **State** — [src/context/BudgetContext.tsx](src/context/BudgetContext.tsx). Holds the whole
    `BudgetStore` plus `currentMonth` and `prefs`; every mutation goes through `mutateMonth`, which
    is a no-op when the selected month has no data. Two `useEffect`s persist store/prefs on any change.
@@ -41,10 +42,7 @@ Three layers, deliberately separated:
    [src/index.css](src/index.css). Components read state via `useBudget()` or receive it as props;
    they never touch `localStorage` or recompute budget math themselves.
 
-[docs/budget-mobile-implementation.md](docs/budget-mobile-implementation.md) records the earlier
-"Soft" design port. That UI is gone (the presentation layer now runs on 토스 TDS Mobile — see
-[UI conventions](#ui-conventions)), but the standing rule it states still holds: **the logic/state
-layers are reused as-is; UI work rewrites only the presentation layer.** Keep that split.
+**UI work rewrites only the presentation layer; layers 1–2 are reused as-is.** Keep that split.
 
 ### Data model invariants
 
@@ -86,14 +84,16 @@ reload. Storage keys are versioned (`budget-balance:data:v1`, `budget-balance:pr
 - `projection()` and `paceWarning()` return **`null` for any month that isn't the current month**;
   callers must handle null rather than render a meaningless forecast. Both accept an injectable
   `today: Date` — tests rely on this, so keep the parameter when editing.
+- `paceWarning()` / `FAST_PACE_THRESHOLD_PP` and the context's `resetCategoryExpenses` have **no
+  caller in the UI**. `noUnusedLocals` won't flag them and `paceWarning` still has tests, so leave
+  them unless you drop those tests too.
 
 ### UI conventions
 
 - All user-facing strings and most code comments are Korean; match that.
 - **UI는 토스 [TDS Mobile](https://tossmini-docs.toss.im/tds-mobile/)(`@toss/tds-mobile`)로 만든다.**
-  2026-07-25에 직접 만든 "Soft" 디자인 시스템을 걷어내고 TDS로 갈아탔다. 새 UI를 만들 때는 먼저
-  `@toss/tds-mobile`에 해당 컴포넌트가 있는지 보고, 없을 때만 직접 만든다. 타입 정의
-  (`node_modules/@toss/tds-mobile/dist/esm/index.d.ts`)가 사실상의 API 문서다.
+  새 UI를 만들 때는 먼저 `@toss/tds-mobile`에 해당 컴포넌트가 있는지 보고, 없을 때만 직접 만든다.
+  타입 정의(`node_modules/@toss/tds-mobile/dist/esm/index.d.ts`)가 사실상의 API 문서다.
 - [App.tsx](src/App.tsx)의 최상단이 `TDSMobileAITProvider`(`@toss/tds-mobile-ait`)다. 이게
   `:root`에 `--adaptive*` 색 변수와 타이포 변수를 주입하므로 **provider 밖에서는 TDS 컴포넌트가
   깨진다.** 토스 앱 밖(일반 브라우저)에서는 `@apps-in-toss/web-framework` 호출이 실패하지만
@@ -107,26 +107,46 @@ reload. Storage keys are versioned (`budget-balance:data:v1`, `budget-balance:pr
   t4=20, t5=17, t6=15, t7=13, st13=11px (전체 순서: t1 st1 st2 st3 t2 st4 st5 st6 t3 st7 t4 st8 st9
   t5 st10 t6 st11 t7 st12 st13 = 30→11px).
 - 아이콘은 `IconButton`/`TopNavigationIconButton`의 `name`으로 지정하며 `https://static.toss.im/icons/svg/{name}.svg`
-  에서 받아온다. **TDS 자신이 참조하는 이름만 쓴다** (`icon-arrow-left-small-mono`,
-  `icon-arrow-right-small-mono`, `icon-arrow-up-mono`, `icon-arrow-down-mono`, `icon-x-circle-mono` …)
-  — 없는 이름을 넣으면 조용히 404가 난다.
-- [index.css](src/index.css)는 이제 **레이아웃 전용**이다 (중앙 460px 컬럼, 섹션 간격, 시트/설정
-  화면 내부 여백). 색·모양·타이포는 넣지 않는다. `.app-shell`의 `transform: translateZ(0)`는
-  일부러 넣은 것 — TDS의 `TopNavigation fixed` / `FixedBottomCTA`가 뷰포트가 아니라 이 컬럼을
-  기준으로 고정되게 하는 containing block이다. 지우면 데스크톱에서 화면 전체로 퍼진다.
+  에서 받아온다. **TDS 자신이 참조하는 이름만 쓴다** — 없는 이름을 넣으면 조용히 404가 난다.
+  쓰기 전에 `grep -rl "icon-이름" node_modules/@toss/`로 확인할 것. 현재 쓰는 이름:
+  `icon-arrow-left-small-mono`, `icon-arrow-right-small-mono`, `icon-arrow-up-mono`,
+  `icon-arrow-down-mono`, `icon-refresh-mono`, `icon-x-circle-mono`.
+- [index.css](src/index.css)는 **레이아웃 전용**이다 (중앙 460px 컬럼, 섹션 간격, 시트/설정 화면
+  내부 여백). 색·모양·타이포는 넣지 않는다. `.app-shell`의 `transform: translateZ(0)`는 일부러
+  넣은 것 — TDS의 `TopNavigation fixed` / `FixedBottomCTA`가 뷰포트가 아니라 이 컬럼을 기준으로
+  고정되게 하는 containing block이다. 지우면 데스크톱에서 화면 전체로 퍼진다.
+- **금액 입력은 전부 `type="text"` + `inputMode="numeric"`이고**, 표시할 때 `formatThousands`,
+  받을 때 `toAmountDigits`([format.ts](src/lib/format.ts))를 거친다 — `type="number"`나 TDS
+  `NumberKeypad`를 쓰지 않는다(키패드는 레이아웃에서 자리를 고정으로 차지해 본문을 누른다).
+  `toAmountDigits`가 숫자 외 문자·앞자리 0·9자리 초과를 잘라 내므로 새 금액 필드도 이 쌍을 쓴다.
+- 설정 화면의 항목 편집 `TextField`는 로컬 state 없이 `onChange`마다 `updateCategory`를 직접
+  호출한다(=키 입력마다 저장·재계산). 필드를 비우면 그 자리에서 예산이 0이 된다.
+- 지출 시트가 실제로 편집하는 값은 **금액·항목·결제수단뿐**이다. `date`는 새 지출이면
+  "현재 월이면 오늘, 아니면 그 달 1일", 수정이면 원본 유지고, `memo`는 타입·저장·정렬에는
+  살아 있지만 입력 UI가 없다. 없는 게 아니라 화면에서 빠진 것이니 지우지 말 것.
 - `ListRow`는 `as="button"`으로 렌더링해 행 전체를 누를 수 있게 하며(`.cat-row`, `.exp-row`가
   버튼 기본 스타일만 지운다), 그래서 `<List>`(ul) 대신 `.list-rows` div로 감싼다.
-- 오버레이는 전부 TDS 것을 쓴다: 하단 시트는 `BottomSheet`(+ `BottomSheet.CTA` / `DoubleCTA`),
-  전체 화면은 `Modal` + `Modal.Overlay` / `Modal.Content`, 파괴적 동작은
-  [ConfirmDialog.tsx](src/components/ConfirmDialog.tsx)(TDS `ConfirmDialog` 래퍼)를 거친다.
-  직접 만들었던 `Modal.tsx` 프리미티브는 삭제했다 — 되살리지 말 것.
-  `BottomSheet`는 닫힘 애니메이션 후 `onExited`가 불리므로, 시트를 닫고 이어서 할 일
+- 오버레이는 TDS 것을 쓴다: 하단 시트는 `BottomSheet`(+ `BottomSheet.CTA` / `DoubleCTA`), 파괴적
+  동작은 [ConfirmDialog.tsx](src/components/ConfirmDialog.tsx)(TDS `ConfirmDialog` 래퍼)를 거친다.
+  모달 프리미티브를 직접 만들지 않는다.
+- **예외는 설정 화면 하나뿐이다.** TDS `Modal`은 고정폭 카드라 전체 화면 페이지에 맞지 않아
+  [SettingsModal.tsx](src/components/SettingsModal.tsx)는 `.settings-panel`(`position: fixed`)을
+  직접 그린다(현재 코드에 TDS `Modal` 사용처는 없다). 여기 엮여 있는 제약 세 가지:
+  - `.app-shell`의 `transform`이 containing block이라 그 안에서는 `fixed`가 460px 컬럼에 갇힌다.
+    그래서 `createPortal(..., document.body)`로 셸 밖에 붙인다 — 포털을 빼면 화면을 덮지 못한다.
+  - `.settings-panel`의 `z-index: 9999`는 TDS 오버레이보다 **낮게** 둔 값이다. 확인 다이얼로그가
+    설정 패널 위에 떠야 하므로 올리지 말 것.
+  - 포커스 트랩·스크롤 잠금·Esc 닫기를 TDS가 안 해 주므로 컴포넌트가 직접 처리한다
+    (`body.style.overflow`, `keydown` 리스너). 확인 다이얼로그가 떠 있으면 Esc를 그쪽에 양보한다.
+- `BottomSheet`는 닫힘 애니메이션 후 `onExited`가 불리므로, 시트를 닫고 이어서 할 일
   (예: 삭제 확인 다이얼로그 열기)은 `onExited` 뒤로 미룬다 —
-  [QuickExpenseForm.tsx](src/components/QuickExpenseForm.tsx)의 `afterExitRef` 참고.
+  [QuickExpenseForm.tsx](src/components/QuickExpenseForm.tsx)의 `afterExitRef` 참고. 같은 파일의
+  `useSheetMaxHeight`도 지우지 말 것: `BottomSheet`의 `maxHeight` prop은 마운트 시점 값으로 굳어서
+  키보드가 올라와도 안 줄어들기 때문에 `visualViewport` 크기를 `style`로 덮어써야 금액 입력이
+  키보드에 가리지 않는다.
 
-### Known README drift
+### README
 
-[README.md](README.md) still describes a pace-warning banner; it was replaced by the
-projected-balance line in [SummaryCard.tsx](src/components/SummaryCard.tsx). `resetCategoryExpenses`
-is unwired since the per-category settings button was repurposed to "기본값으로" (restore the seed
-defaults). Trust the code over the README here.
+[README.md](README.md)는 UI 개편 이전 문서라 화면·컴포넌트 구성 설명이 현재 코드와 다르다.
+**코드를 먼저 믿을 것.** 여전히 맞는 부분은 앱의 목적, 실행 명령, 예산 경고 규칙 표, 저장 키와
+정수 원 단위 규칙이다.

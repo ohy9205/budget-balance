@@ -5,9 +5,6 @@
 
 서버·DB·로그인 없이 브라우저 `localStorage`에만 데이터를 저장하는 순수 로컬 웹앱입니다.
 
-> 현재 버전은 **기능 중심** 구현이며, UI 디자인은 이후 단계에서 다듬을 예정입니다. 스타일은
-> 정보 전달에 필요한 최소 수준으로만 작성되어 있습니다.
-
 ## 실행 방법
 
 ```bash
@@ -15,7 +12,7 @@ npm install
 npm run dev      # 개발 서버 (기본 http://localhost:5173)
 npm run build    # 타입체크(tsc) + 프로덕션 빌드
 npm run preview  # 빌드 결과 미리보기
-npm run test     # 계산 로직 단위 테스트 (Vitest)
+npm run test     # 계산 로직 ㄹㄷㅁㅅ단위 테스트 (Vitest)
 ```
 
 Node 18+ 권장 (개발 환경: Node 22, npm 10).
