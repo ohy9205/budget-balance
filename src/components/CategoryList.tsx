@@ -52,14 +52,17 @@ export function CategoryList({ stats, onAddExpense }: CategoryListProps) {
     <>
       <DragDropProvider
         sensors={[
-          /* 기본값은 마우스에서 5px 이동만으로 드래그가 시작된다 — Delay만 남겨 통일한다 */
           PointerSensor.configure({
+            /* 기본값은 마우스에서 5px 이동만으로 드래그가 시작된다 — Delay만 남겨 통일한다 */
             activationConstraints: [
               new PointerActivationConstraints.Delay({
                 value: LONG_PRESS_MS,
                 tolerance: LONG_PRESS_TOLERANCE_PX,
               }),
             ],
+            /* 기본값은 버튼 위에서 시작한 드래그를 막는데, 카드 자체가 ListRow 버튼이라
+               그대로 두면 활성화가 아예 안 된다. 카드 안에 다른 인터랙티브 요소는 없다. */
+            preventActivation: () => false,
           }),
           KeyboardSensor,
         ]}
