@@ -15,7 +15,7 @@ import { allCategoryStats } from "./lib/calculations";
 import { getDateKey, getMonthKey, isCurrentMonth } from "./lib/date";
 import { MonthSelector } from "./components/MonthSelector";
 import { SummaryCard } from "./components/SummaryCard";
-import { CategoryCard } from "./components/CategoryCard";
+import { CategoryList } from "./components/CategoryList";
 import { QuickExpenseForm } from "./components/QuickExpenseForm";
 import { RecentExpenses } from "./components/RecentExpenses";
 import { SettingsModal } from "./components/SettingsModal";
@@ -113,15 +113,10 @@ function Dashboard() {
                 />
               </div>
               <div className="section-card">
-                <div className="list-rows">
-                  {stats.map((s) => (
-                    <CategoryCard
-                      key={s.category.id}
-                      stats={s}
-                      onAddExpense={(categoryId) => setExpenseModal({ mode: "add", categoryId })}
-                    />
-                  ))}
-                </div>
+                <CategoryList
+                  stats={stats}
+                  onAddExpense={(categoryId) => setExpenseModal({ mode: "add", categoryId })}
+                />
               </div>
             </section>
 

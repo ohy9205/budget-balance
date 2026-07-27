@@ -133,6 +133,35 @@ body {
   cursor: pointer;
 }
 
+/* 드래그 정렬 대상 겸 메뉴의 위치 기준.
+   touch-action은 none이 아니라 manipulation이다 — 롱프레스 전까지는 스크롤이 살아야 한다. */
+.cat-sortable {
+  position: relative;
+  touch-action: manipulation;
+  /* 길게 눌렀을 때 iOS 텍스트 선택·확대 메뉴 차단 */
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* .section-card에 overflow가 없어 카드 밖으로 넘쳐도 잘리지 않는다 */
+.cat-menu {
+  position: absolute;
+  top: calc(100% - 4px);
+  left: 16px;
+}
+
+.cat-menu--preview {
+  pointer-events: none;
+}
+
+/* 바깥을 눌러 닫기 위한 투명 면 */
+.cat-menu-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+}
+
 .cat-body {
   width: 100%;
   display: flex;
