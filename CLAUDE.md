@@ -174,7 +174,10 @@ reload. Storage keys are versioned (`budget-balance:data:v1`, `budget-balance:pr
   `updateCategory`를 직접 호출한다(=키 입력마다 저장·재계산, 필드를 비우면 그 자리에서 예산이 0).
   대시보드에서 롱프레스로 여는 [CategoryEditSheet.tsx](src/components/CategoryEditSheet.tsx)는
   반대로 **저장 버튼을 눌러야 반영**한다 — 닫기로 취소할 수 있어야 하기 때문이다. 둘을 한
-  컴포넌트로 합치지 말 것.
+  컴포넌트로 합치지 말 것. 항목 **추가**도 둘이다 — 설정 화면의
+  [AddCategoryForm](src/components/AddCategoryForm.tsx)(인라인 폼, 추가 후 폼만 비움)과 대시보드
+  목록 맨 아래 "+ 항목 추가"가 여는 [CategoryAddSheet](src/components/CategoryAddSheet.tsx)(추가하면
+  시트가 닫힌다). 검증은 둘 다 `buildNewCategoryInput` 하나를 쓴다.
 - 지출 시트가 실제로 편집하는 값은 **금액·항목·결제수단뿐**이다. `date`는 새 지출이면
   "현재 월이면 오늘, 아니면 그 달 1일", 수정이면 원본 유지고, `memo`는 타입·저장·정렬에는
   살아 있지만 입력 UI가 없다. 없는 게 아니라 화면에서 빠진 것이니 지우지 말 것.

@@ -194,6 +194,14 @@ body {
   margin-top: 4px;
 }
 
+/* 목록 맨 아래 항목 추가 버튼 — 구분선은 카드 안쪽 행과 같은 16px 여백에 맞춘다 */
+.cat-add {
+  display: flex;
+  justify-content: center;
+  margin: 10px 16px 0;
+  border-top: 1px solid var(--adaptiveHairlineBorder);
+}
+
 .list-empty {
   padding: 28px 24px;
 }
@@ -216,7 +224,6 @@ body {
 .sheet-body {
   display: flex;
   flex-direction: column;
-  gap: 16px;
   padding: 4px 0 8px;
 }
 

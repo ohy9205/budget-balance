@@ -3,10 +3,11 @@ import { DragDropProvider, KeyboardSensor, PointerSensor } from "@dnd-kit/react"
 import { isSortable } from "@dnd-kit/react/sortable";
 import { PointerActivationConstraints } from "@dnd-kit/dom";
 import { RestrictToElement } from "@dnd-kit/dom/modifiers";
-import { useHaptic } from "@toss/tds-mobile";
+import { Button, useHaptic } from "@toss/tds-mobile";
 import type { BudgetCategory } from "../types";
 import type { CategoryStats } from "../lib/calculations";
 import { useBudget } from "../context/BudgetContext";
+import { CategoryAddSheet } from "./CategoryAddSheet";
 import { CategoryCard, type CardMenuState } from "./CategoryCard";
 import { CategoryEditSheet } from "./CategoryEditSheet";
 import { ConfirmDialog } from "./ConfirmDialog";
@@ -30,12 +31,13 @@ interface CategoryListProps {
  * 탭 / 스크롤 / 롱프레스는 `PointerSensor`의 활성화 제약 하나로 갈린다.
  */
 export function CategoryList({ stats, onAddExpense }: CategoryListProps) {
-  const { updateCategory, deleteCategory, reorderCategory } = useBudget();
+  const { addCategory, updateCategory, deleteCategory, reorderCategory } = useBudget();
   const haptic = useHaptic();
 
   const [menu, setMenu] = useState<MenuState>(null);
   const [editing, setEditing] = useState<BudgetCategory | null>(null);
   const [deleting, setDeleting] = useState<BudgetCategory | null>(null);
+  const [adding, setAdding] = useState(false);
 
   const listRef = useRef<HTMLDivElement>(null);
   /** 드래그 뒤 따라오는 유령 click을 무시하기 위한 표시 */
@@ -135,9 +137,23 @@ export function CategoryList({ stats, onAddExpense }: CategoryListProps) {
         </div>
       </DragDropProvider>
 
+      <div className="cat-add">
+        <Button
+          variant="fill"
+          color='light'
+          onClick={() => setAdding(true)}
+        >
+          + 항목 추가
+        </Button>
+      </div>
+
       {/* 손을 뗀 뒤에만 깐다 — 누르는 중에 깔면 이어지는 드래그를 방해한다 */}
       {menu?.committed && (
         <div className="cat-menu-scrim" onClick={() => setMenu(null)} aria-hidden="true" />
+      )}
+
+      {adding && (
+        <CategoryAddSheet onSubmit={addCategory} onClose={() => setAdding(false)} />
       )}
 
       {editing && (
