@@ -149,8 +149,7 @@ reload. Storage keys are versioned (`budget-balance:data:v1`, `budget-balance:pr
 - 아이콘은 `IconButton`/`TopNavigationIconButton`의 `name`으로 지정하며 `https://static.toss.im/icons/svg/{name}.svg`
   에서 받아온다. **TDS 자신이 참조하는 이름만 쓴다** — 없는 이름을 넣으면 조용히 404가 난다.
   쓰기 전에 `grep -rl "icon-이름" node_modules/@toss/`로 확인할 것. 현재 쓰는 이름:
-  `icon-arrow-left-small-mono`, `icon-arrow-right-small-mono`, `icon-arrow-up-mono`,
-  `icon-arrow-down-mono`, `icon-refresh-mono`, `icon-x-circle-mono`.
+  `icon-arrow-left-small-mono`, `icon-arrow-right-small-mono`.
 - [index.css](src/index.css)는 **레이아웃 전용**이다 (중앙 460px 컬럼, 섹션 간격, 시트/설정 화면
   내부 여백). 색·모양·타이포는 넣지 않는다. 유일한 예외가 **섹션 카드 면**이다: 셸 바닥은
   `--adaptiveGreyBackground`, 각 섹션(`.summary` / `.section-card`)은 `--adaptiveBackground` +
@@ -169,15 +168,15 @@ reload. Storage keys are versioned (`budget-balance:data:v1`, `budget-balance:pr
   여기에 걸려 있으니 `?? 0`으로 뭉개지 말 것.
 - 결제수단은 [constants.ts](src/constants.ts)의 `PAYMENT_METHODS` 하나로 정의한다 —
   `SegmentedControl` 항목도 하드코딩하지 않고 여기서 `map`하며, 표시 이름은 `paymentMethodLabel`.
-- 항목 편집 화면은 **둘이고 저장 시점이 다르다.** 설정 화면의
-  [CategoryEditRow.tsx](src/components/CategoryEditRow.tsx)는 로컬 state 없이 `onChange`마다
-  `updateCategory`를 직접 호출한다(=키 입력마다 저장·재계산, 필드를 비우면 그 자리에서 예산이 0).
-  대시보드에서 롱프레스로 여는 [CategoryEditSheet.tsx](src/components/CategoryEditSheet.tsx)는
-  반대로 **저장 버튼을 눌러야 반영**한다 — 닫기로 취소할 수 있어야 하기 때문이다. 둘을 한
-  컴포넌트로 합치지 말 것. 항목 **추가**도 둘이다 — 설정 화면의
-  [AddCategoryForm](src/components/AddCategoryForm.tsx)(인라인 폼, 추가 후 폼만 비움)과 대시보드
-  목록 맨 아래 "+ 항목 추가"가 여는 [CategoryAddSheet](src/components/CategoryAddSheet.tsx)(추가하면
-  시트가 닫힌다). 검증은 둘 다 `buildNewCategoryInput` 하나를 쓴다.
+- **항목 추가·편집·삭제·순서 변경은 전부 대시보드에 있다** — 설정 화면에는 없다(이전에 있던
+  `CategoryEditRow` / `AddCategoryForm`은 삭제했다). 편집은 롱프레스 메뉴가 여는
+  [CategoryEditSheet.tsx](src/components/CategoryEditSheet.tsx), 추가는 목록 맨 아래
+  "+ 항목 추가"가 여는 [CategoryAddSheet.tsx](src/components/CategoryAddSheet.tsx)다. 둘 다
+  **CTA를 눌러야 반영**되고(닫기로 취소할 수 있어야 한다) 성공하면 시트가 닫히며, 검증은 각각
+  `buildCategoryEditPatch` / `buildNewCategoryInput` 순수 함수 하나에만 있다.
+  `resetCategoryToDefault`(+ `categoryDefaultDiff`, `moveCategory`, `isValidNewCategory`)는
+  context·lib에 남아 있지만 지금 호출하는 UI가 없다 — 되살릴 때 다시 쓰라고 남긴 것이니
+  "안 쓰니까" 지우지 말 것.
 - 지출 시트가 실제로 편집하는 값은 **금액·항목·결제수단뿐**이다. `date`는 새 지출이면
   "현재 월이면 오늘, 아니면 그 달 1일", 수정이면 원본 유지고, `memo`는 타입·저장·정렬에는
   살아 있지만 입력 UI가 없다. 없는 게 아니라 화면에서 빠진 것이니 지우지 말 것.
@@ -205,11 +204,9 @@ reload. Storage keys are versioned (`budget-balance:data:v1`, `budget-balance:pr
   `Menu.DropdownItem`은 `role="menuitem"`·`tabindex`를 스스로 넣으므로 덧붙이지 않는다.
 - **예외는 설정 화면 하나뿐이다.** TDS `Modal`은 고정폭 카드라 전체 화면 페이지에 맞지 않아
   [SettingsModal.tsx](src/components/SettingsModal.tsx)는 `.settings-panel`(`position: fixed`)을
-  직접 그린다(현재 코드에 TDS `Modal` 사용처는 없다). 이 파일은 셸(포털·상단바·스크롤 잠금·Esc)과
-  확인 다이얼로그 3종 조율만 담당하고, 항목 편집·추가는
-  [CategoryEditRow](src/components/CategoryEditRow.tsx) /
-  [AddCategoryForm](src/components/AddCategoryForm.tsx)로 나뉘어 있다 —
-  `useBudget()`과 확인 상태는 부모에만 두고 자식엔 props·콜백만 내린다. 여기 엮여 있는 제약 세 가지:
+  직접 그린다(현재 코드에 TDS `Modal` 사용처는 없다). 이 파일이 하는 일은 셸(포털·상단바·스크롤
+  잠금·Esc)과 "이번 달 데이터 초기화" 확인 하나뿐이다 — 항목 관련 UI는 여기 두지 않는다.
+  여기 엮여 있는 제약 세 가지:
   - `.app-shell`의 `transform`이 containing block이라 그 안에서는 `fixed`가 460px 컬럼에 갇힌다.
     그래서 `createPortal(..., document.body)`로 셸 밖에 붙인다 — 포털을 빼면 화면을 덮지 못한다.
   - `.settings-panel`의 `z-index: 9999`는 TDS 오버레이보다 **낮게** 둔 값이다. 확인 다이얼로그가

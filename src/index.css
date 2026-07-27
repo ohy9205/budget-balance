@@ -255,50 +255,6 @@ body {
   padding-right: 24px;
 }
 
-.cat-edit-list {
-  display: flex;
-  flex-direction: column;
-  padding-left: 4px;
-  padding-right: 18px;
-}
-
-.add-fields {
-  display: flex;
-  flex-direction: column;
-  padding: 0 18px;
-}
-
-/* 왼쪽 폼 / 오른쪽 조작 버튼 2단 */
-.cat-edit-row {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-}
-
-.cat-edit-fields {
-  flex: 1;
-  min-width: 0;
-}
-
-/* 순서 이동 그룹과 초기화·삭제 그룹을 폼 높이에 맞춰 위아래 끝으로 벌린다 */
-.cat-edit-actions {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  align-self: stretch;
-  flex-shrink: 0;
-  padding: 0 0 10px;
-}
-
-.cat-edit-actions-group {
-  display: flex;
-  flex-direction: column;
-}
-
-.settings-group {
-  margin-top: 16px;
-}
-
 .data-btns {
   display: flex;
   flex-direction: column;
