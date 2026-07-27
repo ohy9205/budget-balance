@@ -21,7 +21,7 @@ There is no lint script and no ESLint config (the lone `eslint-disable` comment 
 [BudgetContext.tsx](src/context/BudgetContext.tsx) is vestigial). `npm run build` — tsc with
 `strict`, `noUnusedLocals`, `noUnusedParameters` — is the only static check.
 
-The suite is five files under [src/lib/](src/lib/) (136 tests) running with `environment: "node"`:
+The suite is five files under [src/lib/](src/lib/) (116 tests) running with `environment: "node"`:
 [calculations.test.ts](src/lib/calculations.test.ts) (also covers `format.ts` / `date.ts`),
 [category.test.ts](src/lib/category.test.ts), [expense.test.ts](src/lib/expense.test.ts),
 [month.test.ts](src/lib/month.test.ts), [storage.test.ts](src/lib/storage.test.ts) (`sanitizeMonth`
@@ -48,7 +48,7 @@ Three layers, deliberately separated:
    `projection(data, today)`. Tests pass a counter. Domain input types (`NewExpenseInput`,
    `NewCategoryInput`) live in `types.ts`, **not** in the context file — components import types from
    here and only `useBudget`/`BudgetProvider` from layer 2. **Logic a component needs but React does
-   not belongs here, not in the component** — e.g. `categoryDefaultDiff`, `resolveInitialCategoryId`,
+   not belongs here, not in the component** — e.g. `resolveInitialCategoryId`,
    `buildNewCategoryInput`, `buildCategoryEditPatch`, `buildCategoryNameLookup`,
    `sortExpensesByRecency`. DOM-touching helpers
    (viewport measuring) are the exception and stay next to the component.
@@ -57,13 +57,12 @@ Three layers, deliberately separated:
    is a no-op when the selected month has no data. Two `useEffect`s persist store/prefs on any change.
    **The provider owns no domain rules** — each action is a `setStore`/`mutateMonth` wrapper around a
    pure transition in layer 1 (`createExpense`, `applyExpenseInput`, `createCategory`,
-   `moveCategoryInList`, `moveCategoryToIndex`, `resetCategoryToSeed`, `findPreviousMonthWithData`,
-   `removeMonth`, `createSeededMonth`, `copyBudgetFrom`, `addMonth`). New behaviour goes in the pure
-   function with a test, not inline here.
+   `moveCategoryToIndex`, `findPreviousMonthWithData`, `removeMonth`, `createSeededMonth`,
+   `copyBudgetFrom`, `addMonth`). New behaviour goes in the pure function with a test, not inline
+   here.
    `moveCategoryToIndex` returns **the same array reference** when the move is a no-op (unknown id,
-   or an index that clamps back to where it already is), and `moveCategory` / `reorderCategory` rely
-   on that to leave state untouched — don't "simplify" it into always copying. `moveCategoryInList`
-   ("up"/"down") is a thin wrapper over it, so the edge cases fall out of the clamping.
+   or an index that clamps back to where it already is), and `reorderCategory` relies on that to
+   leave state untouched — don't "simplify" it into always copying.
    **No `useCallback`/`useMemo` for the actions** — the context `value` is a fresh object every
    render and no consumer is `React.memo`ed, so memoizing the callbacks blocks nothing. If profiling
    ever shows a real cost, fix it with `useMemo` on `value` + `React.memo` on the hot consumer, not
@@ -93,9 +92,11 @@ Three layers, deliberately separated:
   the same month's sanitized category list. Adding a category-less expense path would lose data on
   the next load.
 - **`category.seedKey` points back at `DEFAULT_CATEGORY_SEED`.** Categories created from the seed
-  (and copies of them in later months) keep the seed's `key`, so `resetCategoryToDefault` can restore
-  name / monthlyBudget / targetExpenseAmount from [constants.ts](src/constants.ts) even after the
-  name was edited. Manually added categories have no `seedKey` and no default to return to.
+  (and copies of them in later months) keep the seed's `key`, so the row can be traced back to
+  [constants.ts](src/constants.ts) even after the name was edited. Manually added categories have no
+  `seedKey`. **Right now nothing reads it back** — the "기본값으로 되돌리기" UI and its
+  `resetCategoryToSeed` / `categoryDefaultDiff` helpers were removed — but it is still persisted and
+  sanitized, so keep writing it; that is what a restored reset feature would key off.
   `updateCategory`'s patch type excludes it; `sanitizeCategory` drops unknown keys and backfills
   pre-`seedKey` data by matching the stored name against seed names — which also means a **manually
   added** category whose name happens to equal a seed name picks up that `seedKey` on the next load
@@ -174,9 +175,9 @@ reload. Storage keys are versioned (`budget-balance:data:v1`, `budget-balance:pr
   "+ 항목 추가"가 여는 [CategoryAddSheet.tsx](src/components/CategoryAddSheet.tsx)다. 둘 다
   **CTA를 눌러야 반영**되고(닫기로 취소할 수 있어야 한다) 성공하면 시트가 닫히며, 검증은 각각
   `buildCategoryEditPatch` / `buildNewCategoryInput` 순수 함수 하나에만 있다.
-  `resetCategoryToDefault`(+ `categoryDefaultDiff`, `moveCategory`, `isValidNewCategory`)는
-  context·lib에 남아 있지만 지금 호출하는 UI가 없다 — 되살릴 때 다시 쓰라고 남긴 것이니
-  "안 쓰니까" 지우지 말 것.
+  진입점이 사라진 코드(`resetCategoryToDefault`, `categoryDefaultDiff`, `moveCategory`,
+  `moveCategoryInList`, `resetCategoryToSeed`, `isValidNewCategory`)는 테스트까지 함께 지웠다 —
+  "기본값으로 되돌리기"를 되살리려면 lib에 순수 함수 + 테스트부터 다시 쓴다.
 - 지출 시트가 실제로 편집하는 값은 **금액·항목·결제수단뿐**이다. `date`는 새 지출이면
   "현재 월이면 오늘, 아니면 그 달 1일", 수정이면 원본 유지고, `memo`는 타입·저장·정렬에는
   살아 있지만 입력 UI가 없다. 없는 게 아니라 화면에서 빠진 것이니 지우지 말 것.

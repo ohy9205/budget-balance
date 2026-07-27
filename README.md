@@ -15,7 +15,7 @@ npm install
 npm run dev          # 개발 서버 (기본 http://localhost:5173)
 npm run build        # 타입체크(tsc -b) + 프로덕션 빌드
 npm run preview      # 빌드 결과 미리보기
-npm test             # 단위 테스트 (Vitest, 136개)
+npm test             # 단위 테스트 (Vitest, 116개)
 npm run test:watch   # 테스트 watch 모드
 ```
 
@@ -78,14 +78,14 @@ budget-balance/
    │  └─ BudgetContext.tsx         # 상태 보관 + 영속화. 도메인 규칙은 갖지 않는다
    ├─ lib/                         # 순수 로직 (React·DOM 없음, 테스트가 있는 유일한 계층)
    │  ├─ calculations.ts           # 사용률·상태·항목 통계·월 요약·예상 잔액
-   │  ├─ category.ts               # 항목 정렬·검증·생성·순서 이동·기본값 되돌리기
+   │  ├─ category.ts               # 항목 정렬·검증·생성·순서 이동
    │  ├─ expense.ts                # 지출 생성·수정·최신순 정렬
    │  ├─ month.ts                  # 월 데이터 생성·복사·삭제, 지난달 찾기
    │  ├─ storage.ts                # localStorage 저장·복원 + 방어적 정규화
    │  ├─ date.ts                   # 월/날짜 키, 월 이동, 월 일수
    │  ├─ format.ts                 # 금액(1,000원)·퍼센트·날짜·천단위 입력 정규화
    │  ├─ id.ts                     # id 발급 (유일한 비순수 함수)
-   │  └─ *.test.ts                 # 5개 파일, 136개 테스트
+   │  └─ *.test.ts                 # 5개 파일, 116개 테스트
    ├─ hooks/                       # 관심사 하나씩 담은 작은 훅
    │  ├─ useEscapeKey.ts           # Esc 닫기
    │  ├─ useBodyScrollLock.ts      # 오버레이 중 배경 스크롤 잠금
@@ -148,15 +148,15 @@ budget-balance/
 
 - 금액은 모두 **정수 원 단위**입니다.
 - `paymentMethod`: `"credit"`(신용카드) | `"debit"`(체크카드).
-- `seedKey`는 기본 예산 항목에서 온 항목이라는 표시입니다. 이름을 바꿔도 이 키로 기본값을
-  찾아갑니다(`resetCategoryToDefault`). 직접 추가한 항목에는 없습니다.
+- `seedKey`는 기본 예산 항목에서 온 항목이라는 표시입니다. 직접 추가한 항목에는 없습니다.
+  지금은 읽어 쓰는 기능이 없지만("기본값으로 되돌리기"를 제거했습니다) 계속 저장합니다.
 - `memo`는 저장·정렬에는 살아 있지만 현재 입력 UI가 없습니다.
 - 저장 키에 버전이 붙어 있습니다. 데이터 형태를 바꿀 때는 기존 키를 재해석하지 말고
   새 키 + 마이그레이션으로 처리해야 합니다.
 
 ## 향후 개선 가능한 사항
 
-- 항목을 기본 예산값으로 되돌리는 UI 복원(`resetCategoryToDefault`는 남아 있으나 진입점이 없음).
+- 항목을 기본 예산값으로 되돌리는 기능 복원(`seedKey`는 그대로 저장되고 있음).
 - 지출 메모 입력 UI 복원, 날짜 직접 선택.
 - 결제수단 사용자 정의 추가.
 - 컴포넌트 테스트 환경(jsdom + Testing Library) 도입 — 현재는 로직 계층만 테스트합니다.

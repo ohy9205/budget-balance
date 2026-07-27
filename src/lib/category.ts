@@ -1,8 +1,6 @@
 /** 예산 항목(카테고리) 관련 순수 로직. */
 
 import type { BudgetCategory, CategoryPatch, NewCategoryInput } from "../types";
-import { findCategorySeed } from "../constants";
-import { formatCurrency } from "./format";
 
 /** 지출은 남았는데 항목이 삭제된 경우 표시할 이름 */
 const UNKNOWN_CATEGORY_NAME = "(삭제된 항목)";
@@ -13,25 +11,6 @@ const UNKNOWN_CATEGORY_NAME = "(삭제된 항목)";
  */
 export function sortByOrder<T extends { sortOrder: number }>(items: T[]): T[] {
   return [...items].sort((a, b) => a.sortOrder - b.sortOrder);
-}
-
-/** 기본 예산값과 달라진 설정만 "월 예산 270,000원" 형태로 나열 (기본 항목이 아니거나 같으면 빈 배열) */
-export function categoryDefaultDiff(c: BudgetCategory): string[] {
-  const seed = findCategorySeed(c.seedKey);
-  if (!seed) return [];
-  const parts: string[] = [];
-  if (c.name !== seed.name) parts.push(`이름 ${seed.name}`);
-  if (c.monthlyBudget !== seed.monthlyBudget) {
-    parts.push(`월 예산 ${formatCurrency(seed.monthlyBudget)}`);
-  }
-  if (c.targetExpenseAmount !== seed.targetExpenseAmount) {
-    parts.push(
-      `목표 1회 지출액 ${
-        seed.targetExpenseAmount ? formatCurrency(seed.targetExpenseAmount) : "없음"
-      }`,
-    );
-  }
-  return parts;
 }
 
 /** 항목 id → 이름 조회 함수. 목록에 없는 id는 "(삭제된 항목)" */
@@ -76,11 +55,6 @@ export function buildNewCategoryInput(fields: NewCategoryFields): NewCategoryInp
   };
 }
 
-/** 추가 버튼 활성 조건 */
-export function isValidNewCategory(fields: NewCategoryFields): boolean {
-  return buildNewCategoryInput(fields) !== null;
-}
-
 /**
  * 편집 폼 입력값 → `updateCategory` 패치. 저장할 수 없으면 null이다.
  * 규칙은 `buildNewCategoryInput`과 같다 — 이름 필수, 월 예산 필수(0은 허용, 빈 칸은 불가),
@@ -122,7 +96,7 @@ export function createCategory(
 
 /**
  * 항목을 `toIndex` 자리로 옮긴 새 배열. `sortOrder`는 0부터 다시 부여한다.
- * `toIndex`는 목록 범위로 잘라 낸다.
+ * `toIndex`는 목록 범위로 잘라 내므로 끝에서 더 가려 하면 제자리가 된다.
  * 옮길 수 없으면(없는 id, 제자리) **원본 배열을 그대로 반환**하므로 호출부가 무변경을 알 수 있다.
  */
 export function moveCategoryToIndex(
@@ -140,42 +114,4 @@ export function moveCategoryToIndex(
   const [moved] = sorted.splice(from, 1);
   sorted.splice(to, 0, moved);
   return sorted.map((c, i) => ({ ...c, sortOrder: i }));
-}
-
-/**
- * 항목 한 칸 위/아래로 이동한 새 배열.
- * 끝에서 더 갈 수 없으면 `moveCategoryToIndex`의 범위 자르기에 걸려 제자리가 되므로
- * 원본 배열이 그대로 반환된다.
- */
-export function moveCategoryInList(
-  categories: BudgetCategory[],
-  id: string,
-  direction: "up" | "down",
-): BudgetCategory[] {
-  const sorted = sortByOrder(categories);
-  const from = sorted.findIndex((c) => c.id === id);
-  if (from === -1) return categories;
-
-  return moveCategoryToIndex(categories, id, direction === "up" ? from - 1 : from + 1);
-}
-
-/**
- * 해당 항목의 설정값(이름/월 예산/목표액)만 기본 예산값으로 되돌린 새 배열.
- * 지출·정렬 순서는 건드리지 않고, 직접 추가한 항목(기본값 없음)은 그대로 둔다.
- */
-export function resetCategoryToSeed(
-  categories: BudgetCategory[],
-  id: string,
-): BudgetCategory[] {
-  return categories.map((c) => {
-    if (c.id !== id) return c;
-    const seed = findCategorySeed(c.seedKey);
-    if (!seed) return c;
-    return {
-      ...c,
-      name: seed.name,
-      monthlyBudget: seed.monthlyBudget,
-      targetExpenseAmount: seed.targetExpenseAmount,
-    };
-  });
 }
