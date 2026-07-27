@@ -5,7 +5,8 @@
 
 서버·DB·로그인 없이 브라우저 `localStorage`에만 데이터를 저장하는 순수 로컬 웹앱입니다.
 UI는 토스 [TDS Mobile](https://tossmini-docs.toss.im/tds-mobile/)로 만든 모바일 전용 1열 화면이며,
-데스크톱에서는 460px 컬럼으로 중앙에 놓입니다.
+데스크톱에서는 460px 컬럼으로 중앙에 놓입니다. 항목 카드의 드래그 정렬만
+[@dnd-kit/react](https://next.dndkit.com/)를 씁니다.
 
 ## 실행 방법
 
@@ -14,7 +15,7 @@ npm install
 npm run dev          # 개발 서버 (기본 http://localhost:5173)
 npm run build        # 타입체크(tsc -b) + 프로덕션 빌드
 npm run preview      # 빌드 결과 미리보기
-npm test             # 단위 테스트 (Vitest, 120개)
+npm test             # 단위 테스트 (Vitest, 136개)
 npm run test:watch   # 테스트 watch 모드
 ```
 
@@ -30,7 +31,8 @@ Node 18+ 권장 (개발 환경: Node 22, npm 10). 린트 설정은 없고 `npm r
 - **이번 달 요약** — 남은 금액(강조), 전체 사용률 진행 바, 상태 뱃지, 예산/사용액,
   신용·체크 카드별 사용액, **예상 잔액**(하루 평균 × 월 전체 일수, 현재 월에만 표시).
 - **항목 카드** — 남은 금액, 사용률, 진행 바, 상태 뱃지, `사용액 / 예산`,
-  목표 1회 지출액이 있으면 "남은 N회". **카드를 누르면 그 항목으로 지출 추가 시트가 열립니다.**
+  목표 1회 지출액이 있으면 "남은 N회". **짧게 누르면** 그 항목으로 지출 추가 시트가 열리고,
+  **길게 누르면** 수정·삭제 메뉴가 뜹니다. 길게 누른 채 그대로 끌면 순서가 바뀝니다.
 - **지출 추가·수정** — 화면 하단의 "지출 추가" 버튼이나 항목 카드를 눌러 여는 하단 시트에서
   금액·항목·결제수단을 입력합니다. 금액은 천단위 콤마로
   표시되고 숫자 키보드로 받습니다(Enter로 저장). 날짜는 자동으로 정해지며(현재 월이면 오늘,
@@ -84,7 +86,7 @@ budget-balance/
    │  ├─ date.ts                   # 월/날짜 키, 월 이동, 월 일수
    │  ├─ format.ts                 # 금액(1,000원)·퍼센트·날짜·천단위 입력 정규화
    │  ├─ id.ts                     # id 발급 (유일한 비순수 함수)
-   │  └─ *.test.ts                 # 5개 파일, 120개 테스트
+   │  └─ *.test.ts                 # 5개 파일, 136개 테스트
    ├─ hooks/                       # 관심사 하나씩 담은 작은 훅
    │  ├─ useEscapeKey.ts           # Esc 닫기
    │  ├─ useBodyScrollLock.ts      # 오버레이 중 배경 스크롤 잠금
@@ -94,7 +96,9 @@ budget-balance/
    └─ components/
       ├─ MonthSelector.tsx         # 연/월 표시, 이전·다음 달
       ├─ SummaryCard.tsx           # 이번 달 요약
-      ├─ CategoryCard.tsx          # 항목별 카드
+      ├─ CategoryList.tsx          # 항목 목록 + 드래그 정렬·롱프레스 메뉴 조율
+      ├─ CategoryCard.tsx          # 항목별 카드 (정렬 대상 + 롱프레스 메뉴)
+      ├─ CategoryEditSheet.tsx     # 항목 편집 하단 시트 (저장을 눌러야 반영)
       ├─ QuickExpenseForm.tsx      # 지출 추가·수정 하단 시트
       ├─ RecentExpenses.tsx        # 최근 지출 목록
       ├─ SettingsModal.tsx         # 설정 전체 화면 (셸 + 확인 다이얼로그 조율)

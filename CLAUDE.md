@@ -21,7 +21,7 @@ There is no lint script and no ESLint config (the lone `eslint-disable` comment 
 [BudgetContext.tsx](src/context/BudgetContext.tsx) is vestigial). `npm run build` — tsc with
 `strict`, `noUnusedLocals`, `noUnusedParameters` — is the only static check.
 
-The suite is five files under [src/lib/](src/lib/) (120 tests) running with `environment: "node"`:
+The suite is five files under [src/lib/](src/lib/) (136 tests) running with `environment: "node"`:
 [calculations.test.ts](src/lib/calculations.test.ts) (also covers `format.ts` / `date.ts`),
 [category.test.ts](src/lib/category.test.ts), [expense.test.ts](src/lib/expense.test.ts),
 [month.test.ts](src/lib/month.test.ts), [storage.test.ts](src/lib/storage.test.ts) (`sanitizeMonth`
@@ -49,18 +49,21 @@ Three layers, deliberately separated:
    `NewCategoryInput`) live in `types.ts`, **not** in the context file — components import types from
    here and only `useBudget`/`BudgetProvider` from layer 2. **Logic a component needs but React does
    not belongs here, not in the component** — e.g. `categoryDefaultDiff`, `resolveInitialCategoryId`,
-   `buildNewCategoryInput`, `buildCategoryNameLookup`, `sortExpensesByRecency`. DOM-touching helpers
+   `buildNewCategoryInput`, `buildCategoryEditPatch`, `buildCategoryNameLookup`,
+   `sortExpensesByRecency`. DOM-touching helpers
    (Blob download, viewport measuring) are the exception and stay next to the component.
 2. **State** — [src/context/BudgetContext.tsx](src/context/BudgetContext.tsx). Holds the whole
    `BudgetStore` plus `currentMonth` and `prefs`; every mutation goes through `mutateMonth`, which
    is a no-op when the selected month has no data. Two `useEffect`s persist store/prefs on any change.
    **The provider owns no domain rules** — each action is a `setStore`/`mutateMonth` wrapper around a
    pure transition in layer 1 (`createExpense`, `applyExpenseInput`, `createCategory`,
-   `moveCategoryInList`, `resetCategoryToSeed`, `findPreviousMonthWithData`, `removeMonth`,
-   `createSeededMonth`, `copyBudgetFrom`, `addMonth`). New behaviour goes in the pure function with a
-   test, not inline here.
-   `moveCategoryInList` returns **the same array reference** when the move is impossible, and
-   `moveCategory` relies on that to leave state untouched — don't "simplify" it into always copying.
+   `moveCategoryInList`, `moveCategoryToIndex`, `resetCategoryToSeed`, `findPreviousMonthWithData`,
+   `removeMonth`, `createSeededMonth`, `copyBudgetFrom`, `addMonth`). New behaviour goes in the pure
+   function with a test, not inline here.
+   `moveCategoryToIndex` returns **the same array reference** when the move is a no-op (unknown id,
+   or an index that clamps back to where it already is), and `moveCategory` / `reorderCategory` rely
+   on that to leave state untouched — don't "simplify" it into always copying. `moveCategoryInList`
+   ("up"/"down") is a thin wrapper over it, so the edge cases fall out of the clamping.
    **No `useCallback`/`useMemo` for the actions** — the context `value` is a fresh object every
    render and no consumer is `React.memo`ed, so memoizing the callbacks blocks nothing. If profiling
    ever shows a real cost, fix it with `useMemo` on `value` + `React.memo` on the hot consumer, not
@@ -166,17 +169,37 @@ reload. Storage keys are versioned (`budget-balance:data:v1`, `budget-balance:pr
   여기에 걸려 있으니 `?? 0`으로 뭉개지 말 것.
 - 결제수단은 [constants.ts](src/constants.ts)의 `PAYMENT_METHODS` 하나로 정의한다 —
   `SegmentedControl` 항목도 하드코딩하지 않고 여기서 `map`하며, 표시 이름은 `paymentMethodLabel`.
-- 설정 화면의 항목 편집 필드([CategoryEditRow.tsx](src/components/CategoryEditRow.tsx))는 로컬 state
-  없이 `onChange`마다 `updateCategory`를 직접 호출한다(=키 입력마다 저장·재계산). 필드를 비우면
-  그 자리에서 예산이 0이 된다.
+- 항목 편집 화면은 **둘이고 저장 시점이 다르다.** 설정 화면의
+  [CategoryEditRow.tsx](src/components/CategoryEditRow.tsx)는 로컬 state 없이 `onChange`마다
+  `updateCategory`를 직접 호출한다(=키 입력마다 저장·재계산, 필드를 비우면 그 자리에서 예산이 0).
+  대시보드에서 롱프레스로 여는 [CategoryEditSheet.tsx](src/components/CategoryEditSheet.tsx)는
+  반대로 **저장 버튼을 눌러야 반영**한다 — 닫기로 취소할 수 있어야 하기 때문이다. 둘을 한
+  컴포넌트로 합치지 말 것.
 - 지출 시트가 실제로 편집하는 값은 **금액·항목·결제수단뿐**이다. `date`는 새 지출이면
   "현재 월이면 오늘, 아니면 그 달 1일", 수정이면 원본 유지고, `memo`는 타입·저장·정렬에는
   살아 있지만 입력 UI가 없다. 없는 게 아니라 화면에서 빠진 것이니 지우지 말 것.
 - `ListRow`는 `as="button"`으로 렌더링해 행 전체를 누를 수 있게 하며(`.cat-row`, `.exp-row`가
   버튼 기본 스타일만 지운다), 그래서 `<List>`(ul) 대신 `.list-rows` div로 감싼다.
+- **항목 카드의 제스처는 [CategoryList.tsx](src/components/CategoryList.tsx) 한 곳이 관리한다**
+  (`@dnd-kit/react` — legacy `@dnd-kit/core`와 API가 전혀 다르니 예제를 섞지 말 것):
+  - 탭 / 스크롤 / 롱프레스는 `PointerSensor`의 활성화 제약 하나로 갈린다. **기본 센서 설정을
+    반드시 덮어써야 한다** — 기본값은 마우스일 때 5px 이동만으로 드래그가 시작돼 롱프레스 규칙이
+    깨진다. `PointerActivationConstraints.Delay` 하나만 남겨 입력 종류를 통일한다.
+  - 메뉴는 `preview`(아직 누르는 중) → `open`(뗌) 2단계다. `preview`에서는 메뉴에
+    `pointer-events: none`을 주고 스크림도 깔지 않는다 — 안 그러면 이어지는 드래그가 막힌다.
+  - 순서는 `onDragEnd`의 `source.index`(드래그 중 낙관적으로 갱신됨)로 `reorderCategory`를 부른다.
+    `@dnd-kit/helpers`의 `move`를 쓰지 않는다 — `sortOrder` 재부여가 빠지고 도메인 규칙이 샌다.
+  - `.cat-sortable`의 `touch-action`은 `none`이 아니라 `manipulation`이다. 롱프레스 전까지는
+    리스트가 스크롤돼야 한다.
+  - 드래그 뒤 따라오는 유령 `click`을 한 틱 무시한다(`suppressClickRef`). 지우면 드래그를 끝낼
+    때마다 지출 시트가 열린다.
+  - `DragOverlay`는 쓰지 않는다 — 카드가 컨테이너 안에서만 움직이면 되므로 불필요하다.
 - 오버레이는 TDS 것을 쓴다: 하단 시트는 `BottomSheet`(+ `BottomSheet.CTA` / `DoubleCTA`), 파괴적
   동작은 [ConfirmDialog.tsx](src/components/ConfirmDialog.tsx)(TDS `ConfirmDialog` 래퍼)를 거친다.
   모달 프리미티브를 직접 만들지 않는다.
+- 항목 메뉴는 TDS `Menu.Dropdown`을 **`Menu.Trigger` 없이 단독으로** 쓴다(단독 렌더 확인함).
+  `Menu.Trigger`의 dim이 드래그 중 포인터를 가로채기 때문이며, 열림 상태와 위치는 직접 관리한다.
+  `Menu.DropdownItem`은 `role="menuitem"`·`tabindex`를 스스로 넣으므로 덧붙이지 않는다.
 - **예외는 설정 화면 하나뿐이다.** TDS `Modal`은 고정폭 카드라 전체 화면 페이지에 맞지 않아
   [SettingsModal.tsx](src/components/SettingsModal.tsx)는 `.settings-panel`(`position: fixed`)을
   직접 그린다(현재 코드에 TDS `Modal` 사용처는 없다). 이 파일은 셸(포털·상단바·스크롤 잠금·Esc)과
