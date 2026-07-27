@@ -11,6 +11,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@dnd-kit/react": "^0.5.0",
     "@emotion/react": "^11.14.0",
     "@toss/tds-colors": "^0.1.0",
     "@toss/tds-mobile": "^2.5.0",

@@ -2,12 +2,14 @@ import { describe, expect, it } from "vitest";
 import type { BudgetCategory } from "../types";
 import { DEFAULT_CATEGORY_SEED } from "../constants";
 import {
+  buildCategoryEditPatch,
   buildCategoryNameLookup,
   buildNewCategoryInput,
   categoryDefaultDiff,
   createCategory,
   isValidNewCategory,
   moveCategoryInList,
+  moveCategoryToIndex,
   resetCategoryToSeed,
   resolveInitialCategoryId,
   sortByOrder,
@@ -227,6 +229,57 @@ describe("createCategory", () => {
   });
 });
 
+describe("moveCategoryToIndex", () => {
+  const list = [
+    fromSeed({ id: "a", sortOrder: 0 }),
+    fromSeed({ id: "b", sortOrder: 1 }),
+    fromSeed({ id: "c", sortOrder: 2 }),
+  ];
+
+  it("아래로 옮긴다", () => {
+    expect(moveCategoryToIndex(list, "a", 2).map((c) => c.id)).toEqual(["b", "c", "a"]);
+  });
+
+  it("위로 옮긴다", () => {
+    expect(moveCategoryToIndex(list, "c", 0).map((c) => c.id)).toEqual(["c", "a", "b"]);
+  });
+
+  it("sortOrder를 0부터 다시 부여", () => {
+    expect(moveCategoryToIndex(list, "a", 2).map((c) => c.sortOrder)).toEqual([0, 1, 2]);
+  });
+
+  it("범위를 넘는 인덱스는 목록 끝으로 자른다", () => {
+    expect(moveCategoryToIndex(list, "a", 99).map((c) => c.id)).toEqual(["b", "c", "a"]);
+    expect(moveCategoryToIndex(list, "c", -5).map((c) => c.id)).toEqual(["c", "a", "b"]);
+  });
+
+  it("정렬이 어긋난 목록도 sortOrder 기준으로 옮긴다", () => {
+    const messy = [
+      fromSeed({ id: "later", sortOrder: 5 }),
+      fromSeed({ id: "first", sortOrder: 1 }),
+    ];
+    expect(moveCategoryToIndex(messy, "later", 0).map((c) => c.id)).toEqual(["later", "first"]);
+  });
+
+  it("제자리 이동이면 원본 배열 그대로 반환", () => {
+    expect(moveCategoryToIndex(list, "b", 1)).toBe(list);
+  });
+
+  it("범위 밖 인덱스가 제자리로 잘리면 원본 배열 그대로 반환", () => {
+    expect(moveCategoryToIndex(list, "a", -3)).toBe(list);
+    expect(moveCategoryToIndex(list, "c", 99)).toBe(list);
+  });
+
+  it("없는 id면 원본 배열 그대로 반환", () => {
+    expect(moveCategoryToIndex(list, "없는id", 0)).toBe(list);
+  });
+
+  it("원본 배열을 바꾸지 않는다", () => {
+    moveCategoryToIndex(list, "a", 2);
+    expect(list.map((c) => c.id)).toEqual(["a", "b", "c"]);
+  });
+});
+
 describe("moveCategoryInList", () => {
   const list = [
     fromSeed({ id: "a", sortOrder: 0 }),
@@ -266,6 +319,45 @@ describe("moveCategoryInList", () => {
   it("원본 배열을 바꾸지 않는다", () => {
     moveCategoryInList(list, "b", "up");
     expect(list.map((c) => c.id)).toEqual(["a", "b", "c"]);
+  });
+});
+
+describe("buildCategoryEditPatch", () => {
+  it("정상 입력이면 이름·월 예산·목표액 패치", () => {
+    expect(buildCategoryEditPatch(fields({ name: " 식비 ", monthlyBudget: 300000 }))).toEqual({
+      name: "식비",
+      monthlyBudget: 300000,
+      targetExpenseAmount: undefined,
+    });
+  });
+
+  it("이름이 공백뿐이면 null", () => {
+    expect(buildCategoryEditPatch(fields({ name: "   " }))).toBeNull();
+  });
+
+  it("예산 칸이 비어 있으면(undefined) null", () => {
+    expect(buildCategoryEditPatch(fields({ monthlyBudget: undefined }))).toBeNull();
+  });
+
+  it("예산 0은 저장할 수 있다", () => {
+    expect(buildCategoryEditPatch(fields({ monthlyBudget: 0 }))?.monthlyBudget).toBe(0);
+  });
+
+  it("음수 예산은 null", () => {
+    expect(buildCategoryEditPatch(fields({ monthlyBudget: -1 }))).toBeNull();
+  });
+
+  it("목표액이 0 이하면 없음(undefined)", () => {
+    expect(buildCategoryEditPatch(fields({ targetExpenseAmount: 0 }))?.targetExpenseAmount)
+      .toBeUndefined();
+  });
+
+  it("금액은 정수로 반올림한다", () => {
+    const patch = buildCategoryEditPatch(
+      fields({ monthlyBudget: 1000.6, targetExpenseAmount: 99.4 }),
+    );
+    expect(patch?.monthlyBudget).toBe(1001);
+    expect(patch?.targetExpenseAmount).toBe(99);
   });
 });
 

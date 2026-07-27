@@ -1,13 +1,18 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import type {
-  BudgetCategory,
   BudgetStore,
+  CategoryPatch,
   MonthlyBudgetData,
   NewCategoryInput,
   NewExpenseInput,
   Prefs,
 } from "../types";
-import { createCategory, moveCategoryInList, resetCategoryToSeed } from "../lib/category";
+import {
+  createCategory,
+  moveCategoryInList,
+  moveCategoryToIndex,
+  resetCategoryToSeed,
+} from "../lib/category";
 import { addMonth, getMonthKey } from "../lib/date";
 import { applyExpenseInput, createExpense } from "../lib/expense";
 import { newId } from "../lib/id";
@@ -39,9 +44,11 @@ export interface BudgetContextValue {
 
   addCategory: (input: NewCategoryInput) => void;
   /** `seedKey`는 기본값을 찾아가는 참조이므로 수정 대상에서 제외한다 */
-  updateCategory: (id: string, patch: Partial<Omit<BudgetCategory, "id" | "seedKey">>) => void;
+  updateCategory: (id: string, patch: CategoryPatch) => void;
   deleteCategory: (id: string) => void;
   moveCategory: (id: string, direction: "up" | "down") => void;
+  /** 항목을 `toIndex` 자리로 옮긴다 (드래그 정렬용). 범위 밖 인덱스는 잘라 낸다. */
+  reorderCategory: (id: string, toIndex: number) => void;
   /** 기본 항목의 이름·월 예산·목표 1회 지출액을 기본 예산값으로 되돌린다 (지출은 그대로) */
   resetCategoryToDefault: (id: string) => void;
 
@@ -140,7 +147,7 @@ export function BudgetProvider({ children }: { children: ReactNode }) {
     }));
   }
 
-  function updateCategory(id: string, patch: Partial<Omit<BudgetCategory, "id" | "seedKey">>) {
+  function updateCategory(id: string, patch: CategoryPatch) {
     mutateMonth((data) => ({
       ...data,
       categories: data.categories.map((c) => (c.id === id ? { ...c, ...patch } : c)),
@@ -160,6 +167,13 @@ export function BudgetProvider({ children }: { children: ReactNode }) {
     mutateMonth((data) => {
       const categories = moveCategoryInList(data.categories, id, direction);
       // 옮길 수 없었으면 원본 배열이 그대로 온다 → 상태를 건드리지 않는다
+      return categories === data.categories ? data : { ...data, categories };
+    });
+  }
+
+  function reorderCategory(id: string, toIndex: number) {
+    mutateMonth((data) => {
+      const categories = moveCategoryToIndex(data.categories, id, toIndex);
       return categories === data.categories ? data : { ...data, categories };
     });
   }
@@ -188,6 +202,7 @@ export function BudgetProvider({ children }: { children: ReactNode }) {
     updateCategory,
     deleteCategory,
     moveCategory,
+    reorderCategory,
     resetCategoryToDefault,
     resetCurrentMonth,
   };

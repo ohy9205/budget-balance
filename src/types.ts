@@ -59,6 +59,9 @@ export interface NewCategoryInput {
   targetExpenseAmount?: number;
 }
 
+/** 항목 수정 입력값. `seedKey`는 기본값을 찾아가는 참조이므로 수정 대상에서 제외한다. */
+export type CategoryPatch = Partial<Omit<BudgetCategory, "id" | "seedKey">>;
+
 /** 최근 사용 값 기억 (빠른 입력 편의) */
 export interface Prefs {
   lastCategoryId?: string;
