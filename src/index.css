@@ -38,7 +38,7 @@ body {
 
 .app-main {
   /* 상단: fixed TopNavigation 높이 / 하단: FixedBottomCTA 높이 */
-  padding: 58px 0 112px;
+  padding: 50px 0 112px;
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -53,7 +53,7 @@ body {
 
 .section-card {
   margin: 0 16px;
-  padding: 6px 0;
+  padding: 6px;
   border-radius: 20px;
   background: var(--adaptiveBackground);
 }
@@ -85,7 +85,25 @@ body {
 }
 
 .summary-bar {
+  position: relative;
   margin: 6px 0 2px;
+}
+
+/*
+ * 진행 바 끝에 붙는 사용률 캡슐.
+ * translate 퍼센트는 자기 폭 기준이라 --bar-progress를 그대로 되돌리면
+ * 0%에서는 왼쪽 끝, 100%에서는 오른쪽 끝에 딱 맞아 바 밖으로 넘치지 않는다.
+ * 색(배경)은 상태색이라 statusTheme에서 인라인으로 받는다.
+ */
+.summary-bar-badge {
+  position: absolute;
+  top: 50%;
+  left: var(--bar-progress);
+  transform: translate(calc(-1 * var(--bar-progress)), -50%);
+  padding: 2px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+  pointer-events: none;
 }
 
 .summary-row {
@@ -200,6 +218,7 @@ body {
   justify-content: center;
   margin: 10px 16px 0;
   border-top: 1px solid var(--adaptiveHairlineBorder);
+  padding-top: 6px;
 }
 
 .list-empty {

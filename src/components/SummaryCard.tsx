@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import { Paragraph, ProgressBar } from "@toss/tds-mobile";
 import { adaptive } from "@toss/tds-colors";
 import type { MonthlyBudgetData } from "../types";
@@ -42,16 +43,29 @@ export function SummaryCard({ data }: { data: MonthlyBudgetData }) {
           progress={toProgress(summary.totalRate)}
           color={STATUS_COLOR[status]}
         />
+        <span
+          className="summary-bar-badge"
+          style={
+            {
+              "--bar-progress": `${toProgress(summary.totalRate) * 100}%`,
+              background: STATUS_COLOR[status],
+            } as CSSProperties
+          }
+        >
+          <Paragraph typography="st13" fontWeight="bold" color={adaptive.background}>
+            <Paragraph.Text>{formatPercent(summary.totalRate)}</Paragraph.Text>
+          </Paragraph>
+        </span>
       </div>
 
       <div className="summary-row">
         <Paragraph typography="t7" color={adaptive.grey600}>
-          <Paragraph.Text>예산 {formatCurrency(summary.totalBudget)}</Paragraph.Text>
+          <Paragraph.Text>
+            사용 {formatCurrency(summary.totalUsed)}
+          </Paragraph.Text>
         </Paragraph>
         <Paragraph typography="t7" color={adaptive.grey600}>
-          <Paragraph.Text>
-            사용 {formatCurrency(summary.totalUsed)} · {formatPercent(summary.totalRate)}
-          </Paragraph.Text>
+          <Paragraph.Text>예산 {formatCurrency(summary.totalBudget)}</Paragraph.Text>
         </Paragraph>
       </div>
 
