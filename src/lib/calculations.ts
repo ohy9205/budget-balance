@@ -34,7 +34,7 @@ export function computeUsageRate(used: number, budget: number): number {
 }
 
 /** 특정 항목의 총 사용액 */
-export function categoryUsed(expenses: Expense[], categoryId: string): number {
+function categoryUsed(expenses: Expense[], categoryId: string): number {
   return expenses.reduce(
     (sum, e) => (e.categoryId === categoryId ? sum + e.amount : sum),
     0,
@@ -92,7 +92,7 @@ export function monthlySummary(data: MonthlyBudgetData): MonthlySummary {
 
   const usedByMethod: Record<PaymentMethod, number> = { credit: 0, debit: 0 };
   for (const e of data.expenses) {
-    usedByMethod[e.paymentMethod] = (usedByMethod[e.paymentMethod] ?? 0) + e.amount;
+    usedByMethod[e.paymentMethod] += e.amount;
   }
 
   return { totalBudget, totalUsed, totalRemaining, totalRate, usedByMethod };

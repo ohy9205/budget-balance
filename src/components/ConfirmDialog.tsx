@@ -4,7 +4,6 @@ interface ConfirmDialogProps {
   title: string;
   message: string;
   confirmLabel?: string;
-  cancelLabel?: string;
   danger?: boolean;
   onConfirm: () => void;
   onCancel: () => void;
@@ -15,7 +14,6 @@ export function ConfirmDialog({
   title,
   message,
   confirmLabel = "확인",
-  cancelLabel = "취소",
   danger = false,
   onConfirm,
   onCancel,
@@ -27,9 +25,7 @@ export function ConfirmDialog({
       description={message}
       onClose={onCancel}
       cancelButton={
-        <TDSConfirmDialog.CancelButton onClick={onCancel}>
-          {cancelLabel}
-        </TDSConfirmDialog.CancelButton>
+        <TDSConfirmDialog.CancelButton onClick={onCancel}>취소</TDSConfirmDialog.CancelButton>
       }
       confirmButton={
         <TDSConfirmDialog.ConfirmButton

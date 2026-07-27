@@ -175,7 +175,6 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
           }}
         />
       )}
-
     </>
   );
 }

@@ -51,7 +51,7 @@ Three layers, deliberately separated:
    not belongs here, not in the component** — e.g. `categoryDefaultDiff`, `resolveInitialCategoryId`,
    `buildNewCategoryInput`, `buildCategoryEditPatch`, `buildCategoryNameLookup`,
    `sortExpensesByRecency`. DOM-touching helpers
-   (Blob download, viewport measuring) are the exception and stay next to the component.
+   (viewport measuring) are the exception and stay next to the component.
 2. **State** — [src/context/BudgetContext.tsx](src/context/BudgetContext.tsx). Holds the whole
    `BudgetStore` plus `currentMonth` and `prefs`; every mutation goes through `mutateMonth`, which
    is a no-op when the selected month has no data. Two `useEffect`s persist store/prefs on any change.

@@ -142,5 +142,3 @@ export function savePrefs(prefs: Prefs): void {
     console.warn("설정을 저장하지 못했습니다.", err);
   }
 }
-
-
