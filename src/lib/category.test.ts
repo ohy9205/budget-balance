@@ -5,7 +5,10 @@ import {
   buildCategoryNameLookup,
   buildNewCategoryInput,
   categoryDefaultDiff,
+  createCategory,
   isValidNewCategory,
+  moveCategoryInList,
+  resetCategoryToSeed,
   resolveInitialCategoryId,
   sortByOrder,
   type NewCategoryFields,
@@ -179,5 +182,119 @@ describe("isValidNewCategory", () => {
   it("이름이나 월 예산 칸이 비면 false", () => {
     expect(isValidNewCategory(fields({ name: "" }))).toBe(false);
     expect(isValidNewCategory(fields({ monthlyBudget: undefined }))).toBe(false);
+  });
+});
+
+describe("createCategory", () => {
+  const existing = [fromSeed({ id: "a", sortOrder: 0 }), fromSeed({ id: "b", sortOrder: 3 })];
+
+  it("정렬 순서는 기존 최대값 +1 (맨 아래)", () => {
+    expect(createCategory({ name: "x", monthlyBudget: 1 }, existing, "new").sortOrder).toBe(4);
+  });
+
+  it("빈 목록이면 0부터", () => {
+    expect(createCategory({ name: "x", monthlyBudget: 1 }, [], "new").sortOrder).toBe(0);
+  });
+
+  it("이름 trim·금액 정수화", () => {
+    const c = createCategory(
+      { name: "  간식 ", monthlyBudget: 1000.6, targetExpenseAmount: 250.4 },
+      [],
+      "new",
+    );
+    expect(c.name).toBe("간식");
+    expect(c.monthlyBudget).toBe(1001);
+    expect(c.targetExpenseAmount).toBe(250);
+  });
+
+  it("음수 예산은 0으로", () => {
+    expect(createCategory({ name: "x", monthlyBudget: -5000 }, [], "new").monthlyBudget).toBe(0);
+  });
+
+  it("목표액이 0 이하면 undefined", () => {
+    expect(
+      createCategory({ name: "x", monthlyBudget: 1, targetExpenseAmount: 0 }, [], "new")
+        .targetExpenseAmount,
+    ).toBeUndefined();
+  });
+
+  it("직접 추가한 항목이라 seedKey가 없다", () => {
+    expect(createCategory({ name: "x", monthlyBudget: 1 }, [], "new").seedKey).toBeUndefined();
+  });
+
+  it("id는 인자로 받은 값", () => {
+    expect(createCategory({ name: "x", monthlyBudget: 1 }, [], "given-id").id).toBe("given-id");
+  });
+});
+
+describe("moveCategoryInList", () => {
+  const list = [
+    fromSeed({ id: "a", sortOrder: 0 }),
+    fromSeed({ id: "b", sortOrder: 1 }),
+    fromSeed({ id: "c", sortOrder: 2 }),
+  ];
+
+  it("위로 이동", () => {
+    expect(moveCategoryInList(list, "b", "up").map((c) => c.id)).toEqual(["b", "a", "c"]);
+  });
+
+  it("아래로 이동", () => {
+    expect(moveCategoryInList(list, "b", "down").map((c) => c.id)).toEqual(["a", "c", "b"]);
+  });
+
+  it("sortOrder를 0부터 다시 부여", () => {
+    expect(moveCategoryInList(list, "c", "up").map((c) => c.sortOrder)).toEqual([0, 1, 2]);
+  });
+
+  it("정렬이 어긋난 목록도 sortOrder 기준으로 옮긴다", () => {
+    const messy = [
+      fromSeed({ id: "later", sortOrder: 5 }),
+      fromSeed({ id: "first", sortOrder: 1 }),
+    ];
+    expect(moveCategoryInList(messy, "later", "up").map((c) => c.id)).toEqual(["later", "first"]);
+  });
+
+  it("맨 위에서 위로 / 맨 아래에서 아래로는 원본 배열 그대로 반환", () => {
+    expect(moveCategoryInList(list, "a", "up")).toBe(list);
+    expect(moveCategoryInList(list, "c", "down")).toBe(list);
+  });
+
+  it("없는 id면 원본 배열 그대로 반환", () => {
+    expect(moveCategoryInList(list, "없는id", "up")).toBe(list);
+  });
+
+  it("원본 배열을 바꾸지 않는다", () => {
+    moveCategoryInList(list, "b", "up");
+    expect(list.map((c) => c.id)).toEqual(["a", "b", "c"]);
+  });
+});
+
+describe("resetCategoryToSeed", () => {
+  it("이름·월 예산·목표액을 기본값으로 되돌린다", () => {
+    const edited = fromSeed({ id: "x", name: "바뀐 이름", monthlyBudget: 1, targetExpenseAmount: 2 });
+    const [restored] = resetCategoryToSeed([edited], "x");
+    expect(restored.name).toBe(seed.name);
+    expect(restored.monthlyBudget).toBe(seed.monthlyBudget);
+    expect(restored.targetExpenseAmount).toBe(seed.targetExpenseAmount);
+  });
+
+  it("정렬 순서와 id는 유지한다", () => {
+    const edited = fromSeed({ id: "x", sortOrder: 9, monthlyBudget: 1 });
+    const [restored] = resetCategoryToSeed([edited], "x");
+    expect(restored.id).toBe("x");
+    expect(restored.sortOrder).toBe(9);
+  });
+
+  it("seedKey가 없는 항목은 그대로 둔다", () => {
+    const manual = fromSeed({ id: "x", seedKey: undefined, name: "직접 추가", monthlyBudget: 1 });
+    expect(resetCategoryToSeed([manual], "x")[0]).toEqual(manual);
+  });
+
+  it("다른 항목은 건드리지 않는다", () => {
+    const other = fromSeed({ id: "other", name: "그대로", monthlyBudget: 1 });
+    const target = fromSeed({ id: "x", monthlyBudget: 1 });
+    const result = resetCategoryToSeed([other, target], "x");
+    expect(result[0]).toEqual(other);
+    expect(result[1].monthlyBudget).toBe(seed.monthlyBudget);
   });
 });

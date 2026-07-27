@@ -9,7 +9,7 @@ import {
   statusFromUsageRate,
 } from "./calculations";
 import { formatCurrency, formatPercent } from "./format";
-import { daysInMonth } from "./date";
+import { addMonth, daysInMonth } from "./date";
 
 const cat = (id: string, budget: number, target?: number, sortOrder = 0) => ({
   id,
@@ -157,5 +157,10 @@ describe("format & date 유틸", () => {
     expect(daysInMonth("2026-07")).toBe(31);
     expect(daysInMonth("2026-02")).toBe(28);
     expect(daysInMonth("2024-02")).toBe(29);
+  });
+  it("addMonth 연 경계 넘김", () => {
+    expect(addMonth("2026-07", 1)).toBe("2026-08");
+    expect(addMonth("2026-12", 1)).toBe("2027-01");
+    expect(addMonth("2026-01", -1)).toBe("2025-12");
   });
 });

@@ -21,10 +21,11 @@ There is no lint script and no ESLint config (the lone `eslint-disable` comment 
 [BudgetContext.tsx](src/context/BudgetContext.tsx) is vestigial). `npm run build` — tsc with
 `strict`, `noUnusedLocals`, `noUnusedParameters` — is the only static check.
 
-The suite is three files under [src/lib/](src/lib/) (50 tests) running with `environment: "node"`:
+The suite is four files under [src/lib/](src/lib/) (81 tests) running with `environment: "node"`:
 [calculations.test.ts](src/lib/calculations.test.ts) (also covers `format.ts` / `date.ts`),
-[category.test.ts](src/lib/category.test.ts), [expense.test.ts](src/lib/expense.test.ts). There is
-no jsdom, Testing Library, or setup file, so adding a component test means adding that config first.
+[category.test.ts](src/lib/category.test.ts), [expense.test.ts](src/lib/expense.test.ts),
+[month.test.ts](src/lib/month.test.ts). There is no jsdom, Testing Library, or setup file, so adding
+a component test means adding that config first.
 
 ## Architecture
 
@@ -35,8 +36,10 @@ Three layers, deliberately separated:
 
 1. **Pure logic** — [src/lib/](src/lib/) + [types.ts](src/types.ts) + [constants.ts](src/constants.ts).
    No React, no DOM (except `storage.ts` touching `localStorage`). `calculations.ts` (budget math),
-   `category.ts` / `expense.ts` (domain rules pulled out of components), `date.ts`, `format.ts` are
-   pure functions, and this is the only layer with tests. Domain input types (`NewExpenseInput`,
+   `category.ts` / `expense.ts` / `month.ts` (domain rules and state transitions), `date.ts`,
+   `format.ts`, `id.ts` are pure functions, and this is the only layer with tests. `id.ts`'s `newId()`
+   is the one exception (random) — that's why the transition functions take `id`/`createdAt` as
+   arguments instead of generating them. Domain input types (`NewExpenseInput`,
    `NewCategoryInput`) live in `types.ts`, **not** in the context file — components import types from
    here and only `useBudget`/`BudgetProvider` from layer 2. **Logic a component needs but React does
    not belongs here, not in the component** — e.g. `categoryDefaultDiff`, `resolveInitialCategoryId`,
@@ -45,6 +48,12 @@ Three layers, deliberately separated:
 2. **State** — [src/context/BudgetContext.tsx](src/context/BudgetContext.tsx). Holds the whole
    `BudgetStore` plus `currentMonth` and `prefs`; every mutation goes through `mutateMonth`, which
    is a no-op when the selected month has no data. Two `useEffect`s persist store/prefs on any change.
+   **The provider owns no domain rules** — each action is a `setStore`/`mutateMonth` wrapper around a
+   pure transition in layer 1 (`createExpense`, `applyExpenseInput`, `createCategory`,
+   `moveCategoryInList`, `resetCategoryToSeed`, `findPreviousMonthWithData`, `addMonth`). New
+   behaviour goes in the pure function with a test, not inline here.
+   `moveCategoryInList` returns **the same array reference** when the move is impossible, and
+   `moveCategory` relies on that to leave state untouched — don't "simplify" it into always copying.
    **No `useCallback`/`useMemo` for the actions** — the context `value` is a fresh object every
    render and no consumer is `React.memo`ed, so memoizing the callbacks blocks nothing. If profiling
    ever shows a real cost, fix it with `useMemo` on `value` + `React.memo` on the hot consumer, not

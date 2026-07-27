@@ -31,6 +31,12 @@ export function daysInMonth(month: string): number {
   return new Date(year, m, 0).getDate();
 }
 
+/** 월 이동: "YYYY-MM" + delta개월 → "YYYY-MM" (연 경계는 Date가 처리) */
+export function addMonth(month: string, delta: number): string {
+  const { year, month: m } = parseMonthKey(month);
+  return getMonthKey(new Date(year, m - 1 + delta, 1));
+}
+
 /** "YYYY-MM" → "YYYY년 M월" */
 export function formatMonthLabel(month: string): string {
   const { year, month: m } = parseMonthKey(month);

@@ -80,3 +80,67 @@ export function buildNewCategoryInput(fields: NewCategoryFields): NewCategoryInp
 export function isValidNewCategory(fields: NewCategoryFields): boolean {
   return buildNewCategoryInput(fields) !== null;
 }
+
+/**
+ * 새 항목 생성 — 정렬 순서는 기존 항목 뒤(맨 아래)로, 금액은 정수·음수 방지로 정규화한다.
+ * 직접 추가한 항목에는 `seedKey`가 없다(되돌릴 기본값이 없다).
+ * `id`는 호출부가 발급해 넣어 준다(순수 함수 유지).
+ */
+export function createCategory(
+  input: NewCategoryInput,
+  existing: BudgetCategory[],
+  id: string,
+): BudgetCategory {
+  const maxOrder = existing.reduce((m, c) => Math.max(m, c.sortOrder), -1);
+  return {
+    id,
+    name: input.name.trim(),
+    monthlyBudget: Math.max(0, Math.round(input.monthlyBudget)),
+    targetExpenseAmount:
+      input.targetExpenseAmount && input.targetExpenseAmount > 0
+        ? Math.round(input.targetExpenseAmount)
+        : undefined,
+    sortOrder: maxOrder + 1,
+  };
+}
+
+/**
+ * 항목 한 칸 위/아래로 이동한 새 배열. `sortOrder`는 0부터 다시 부여한다.
+ * 옮길 수 없으면(없는 id, 이미 끝) **원본 배열을 그대로 반환**하므로 호출부가 무변경을 알 수 있다.
+ */
+export function moveCategoryInList(
+  categories: BudgetCategory[],
+  id: string,
+  direction: "up" | "down",
+): BudgetCategory[] {
+  const sorted = sortByOrder(categories);
+  const idx = sorted.findIndex((c) => c.id === id);
+  if (idx === -1) return categories;
+
+  const swapWith = direction === "up" ? idx - 1 : idx + 1;
+  if (swapWith < 0 || swapWith >= sorted.length) return categories;
+
+  [sorted[idx], sorted[swapWith]] = [sorted[swapWith], sorted[idx]];
+  return sorted.map((c, i) => ({ ...c, sortOrder: i }));
+}
+
+/**
+ * 해당 항목의 설정값(이름/월 예산/목표액)만 기본 예산값으로 되돌린 새 배열.
+ * 지출·정렬 순서는 건드리지 않고, 직접 추가한 항목(기본값 없음)은 그대로 둔다.
+ */
+export function resetCategoryToSeed(
+  categories: BudgetCategory[],
+  id: string,
+): BudgetCategory[] {
+  return categories.map((c) => {
+    if (c.id !== id) return c;
+    const seed = findCategorySeed(c.seedKey);
+    if (!seed) return c;
+    return {
+      ...c,
+      name: seed.name,
+      monthlyBudget: seed.monthlyBudget,
+      targetExpenseAmount: seed.targetExpenseAmount,
+    };
+  });
+}

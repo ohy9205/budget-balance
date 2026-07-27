@@ -15,13 +15,7 @@ import {
 } from "../constants";
 import { sortByOrder } from "./category";
 import { isValidMonthKey } from "./date";
-
-function newId(): string {
-  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
-    return crypto.randomUUID();
-  }
-  return `id-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
-}
+import { newId } from "./id";
 
 const isPaymentMethod = (v: unknown): v is PaymentMethod => v === "credit" || v === "debit";
 const isFiniteNumber = (v: unknown): v is number => typeof v === "number" && Number.isFinite(v);
@@ -199,5 +193,3 @@ export function parseImportedJSON(text: string): BudgetStore {
   }
   return { version: STORE_VERSION, months };
 }
-
-export { newId };
