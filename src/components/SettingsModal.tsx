@@ -1,13 +1,14 @@
 import { useState } from "react";
 import { createPortal } from "react-dom";
 import {
+  Button,
   ListHeader,
   Paragraph,
   TopNavigation,
   TopNavigationTextButton,
 } from "@toss/tds-mobile";
 import { adaptive } from "@toss/tds-colors";
-import type { BudgetCategory, BudgetStore } from "../types";
+import type { BudgetCategory } from "../types";
 import { useBudget } from "../context/BudgetContext";
 import { categoryDefaultDiff, sortByOrder } from "../lib/category";
 import { formatMonthLabel } from "../lib/date";
@@ -16,7 +17,6 @@ import { useEscapeKey } from "../hooks/useEscapeKey";
 import { AddCategoryForm } from "./AddCategoryForm";
 import { CategoryEditRow } from "./CategoryEditRow";
 import { ConfirmDialog } from "./ConfirmDialog";
-import { DataManagementSection } from "./DataManagementSection";
 
 interface SettingsModalProps {
   onClose: () => void;
@@ -25,8 +25,7 @@ interface SettingsModalProps {
 type PendingConfirm =
   | { kind: "deleteCategory"; category: BudgetCategory }
   | { kind: "resetCategory"; category: BudgetCategory; changes: string[] }
-  | { kind: "resetMonth" }
-  | { kind: "import"; store: BudgetStore };
+  | { kind: "resetMonth" };
 
 /**
  * 설정·데이터 관리 전체 화면. TDS `Modal`(고정폭 카드 + 포커스 트랩)이 전체 화면 페이지에
@@ -43,8 +42,6 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
     moveCategory,
     resetCategoryToDefault,
     resetCurrentMonth,
-    exportStore,
-    importStore,
   } = useBudget();
 
   const [confirm, setConfirm] = useState<PendingConfirm | null>(null);
@@ -110,12 +107,27 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
 
             {monthData && <AddCategoryForm onAdd={addCategory} />}
 
-            <DataManagementSection
-              getStore={exportStore}
-              onImportParsed={(store) => setConfirm({ kind: "import", store })}
-              onRequestResetMonth={() => setConfirm({ kind: "resetMonth" })}
-              hasMonthData={monthData !== null}
-            />
+            {monthData && (
+              <section className="settings-group">
+                <ListHeader
+                  title={
+                    <ListHeader.TitleParagraph fontWeight="bold">
+                      데이터 관리
+                    </ListHeader.TitleParagraph>
+                  }
+                />
+                <div className="data-btns">
+                  <Button
+                    variant="weak"
+                    color="danger"
+                    size="medium"
+                    onClick={() => setConfirm({ kind: "resetMonth" })}
+                  >
+                    이번 달 데이터 초기화
+                  </Button>
+                </div>
+              </section>
+            )}
           </div>
         </div>,
         document.body,
@@ -164,21 +176,6 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
         />
       )}
 
-      {confirm?.kind === "import" && (
-        <ConfirmDialog
-          title="데이터 가져오기"
-          danger
-          message={`현재 전체 데이터를 파일 내용(${
-            Object.keys(confirm.store.months).length
-          }개월)으로 교체합니다. 되돌릴 수 없습니다. 계속할까요?`}
-          confirmLabel="가져오기"
-          onCancel={() => setConfirm(null)}
-          onConfirm={() => {
-            importStore(confirm.store);
-            setConfirm(null);
-          }}
-        />
-      )}
     </>
   );
 }

@@ -36,14 +36,14 @@ budget-balance/
    │  ├─ format.ts                # 금액(1,000원)·퍼센트·날짜 포맷
    │  ├─ calculations.ts          # 핵심 계산 (순수 함수)
    │  ├─ calculations.test.ts     # 단위 테스트 (25개)
-   │  └─ storage.ts               # localStorage 방어적 load/save/export/import
+   │  └─ storage.ts               # localStorage 방어적 load/save
    └─ components/
       ├─ MonthSelector.tsx        # 연/월 표시, 이전·다음 달
       ├─ SummaryCard.tsx          # 전체 요약 + 신용/체크 사용액 + 예상 월말 잔액 + 속도 경고
       ├─ CategoryCard.tsx         # 항목별 카드 (진행률 바, 상태 배지, 남은 횟수)
       ├─ QuickExpenseForm.tsx     # 빠른 지출 입력/수정 (모달)
       ├─ RecentExpenses.tsx       # 최근 지출 내역 + 수정/삭제
-      ├─ SettingsModal.tsx        # 항목 관리 + 초기화/내보내기/가져오기
+      ├─ SettingsModal.tsx        # 항목 관리 + 이번 달 초기화
       ├─ Modal.tsx                # 접근성 다이얼로그 공통
       └─ ConfirmDialog.tsx        # 파괴적 동작 확인
 ```
@@ -60,7 +60,7 @@ budget-balance/
   Enter/저장 등록, 등록 후 폼 초기화(최근값 유지), 0원·음수·비정수 차단.
 - **지출 수정/삭제**: 삭제 전 확인 다이얼로그.
 - **항목 관리**: 추가·이름/예산/목표액 수정·순서 변경(↑↓)·삭제(확인).
-- **데이터 관리**: 이번 달 초기화, 전체 JSON 내보내기, JSON 가져오기(모두 확인 절차).
+- **데이터 관리**: 이번 달 초기화(확인 절차).
 - **방어 로직**: 손상되거나 없는 localStorage 데이터를 정규화/무시하여 앱이 깨지지 않음.
 
 ## 예산 경고 규칙

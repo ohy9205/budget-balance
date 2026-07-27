@@ -48,8 +48,6 @@ export interface BudgetContextValue {
   resetCategoryToDefault: (id: string) => void;
 
   resetCurrentMonth: () => void;
-  exportStore: () => BudgetStore;
-  importStore: (store: BudgetStore) => void;
 }
 
 const BudgetContext = createContext<BudgetContextValue | null>(null);
@@ -180,14 +178,6 @@ export function BudgetProvider({ children }: { children: ReactNode }) {
     });
   }
 
-  function exportStore() {
-    return store;
-  }
-
-  function importStore(imported: BudgetStore) {
-    setStore(imported);
-  }
-
   const value: BudgetContextValue = {
     currentMonth,
     monthData,
@@ -206,8 +196,6 @@ export function BudgetProvider({ children }: { children: ReactNode }) {
     moveCategory,
     resetCategoryToDefault,
     resetCurrentMonth,
-    exportStore,
-    importStore,
   };
 
   return <BudgetContext.Provider value={value}>{children}</BudgetContext.Provider>;

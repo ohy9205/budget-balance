@@ -94,7 +94,7 @@ Three layers, deliberately separated:
 
 ### Defensive loading
 
-`loadStore` / `parseImportedJSON` never throw on bad data: unknown values are normalized field by
+`loadStore` never throws on bad data: unknown values are normalized field by
 field and unusable records are dropped, falling back to an empty store. Any new persisted field
 needs a matching sanitizer in [storage.ts](src/lib/storage.ts), otherwise it silently disappears on
 reload. Storage keys are versioned (`budget-balance:data:v1`, `budget-balance:prefs:v1`) with
@@ -166,10 +166,9 @@ reload. Storage keys are versioned (`budget-balance:data:v1`, `budget-balance:pr
 - **예외는 설정 화면 하나뿐이다.** TDS `Modal`은 고정폭 카드라 전체 화면 페이지에 맞지 않아
   [SettingsModal.tsx](src/components/SettingsModal.tsx)는 `.settings-panel`(`position: fixed`)을
   직접 그린다(현재 코드에 TDS `Modal` 사용처는 없다). 이 파일은 셸(포털·상단바·스크롤 잠금·Esc)과
-  확인 다이얼로그 4종 조율만 담당하고, 내용은
+  확인 다이얼로그 3종 조율만 담당하고, 항목 편집·추가는
   [CategoryEditRow](src/components/CategoryEditRow.tsx) /
-  [AddCategoryForm](src/components/AddCategoryForm.tsx) /
-  [DataManagementSection](src/components/DataManagementSection.tsx)로 나뉘어 있다 —
+  [AddCategoryForm](src/components/AddCategoryForm.tsx)로 나뉘어 있다 —
   `useBudget()`과 확인 상태는 부모에만 두고 자식엔 props·콜백만 내린다. 여기 엮여 있는 제약 세 가지:
   - `.app-shell`의 `transform`이 containing block이라 그 안에서는 `fixed`가 460px 컬럼에 갇힌다.
     그래서 `createPortal(..., document.body)`로 셸 밖에 붙인다 — 포털을 빼면 화면을 덮지 못한다.

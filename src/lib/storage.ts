@@ -170,26 +170,3 @@ export function copyBudgetFrom(source: MonthlyBudgetData, targetMonth: string): 
   };
 }
 
-/** 내보내기용 JSON 문자열 */
-export function exportStoreJSON(store: BudgetStore): string {
-  return JSON.stringify(store, null, 2);
-}
-
-/** 가져오기: JSON 문자열을 방어적으로 파싱. 실패 시 예외 throw. */
-export function parseImportedJSON(text: string): BudgetStore {
-  const parsed = JSON.parse(text) as unknown; // JSON 오류는 호출부에서 처리
-  if (typeof parsed !== "object" || parsed === null) {
-    throw new Error("올바른 데이터 형식이 아닙니다.");
-  }
-  const p = parsed as Record<string, unknown>;
-  const monthsRaw = (p.months ?? {}) as Record<string, unknown>;
-  if (typeof monthsRaw !== "object" || monthsRaw === null) {
-    throw new Error("올바른 데이터 형식이 아닙니다.");
-  }
-  const months: Record<string, MonthlyBudgetData> = {};
-  for (const [key, value] of Object.entries(monthsRaw)) {
-    const m = sanitizeMonth(value, key);
-    if (m) months[m.month] = m;
-  }
-  return { version: STORE_VERSION, months };
-}
