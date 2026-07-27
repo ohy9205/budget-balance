@@ -1,6 +1,6 @@
 import type { BudgetCategory, Expense, MonthlyBudgetData, PaymentMethod } from "../types";
-import { FAST_PACE_THRESHOLD_PP, STATUS_THRESHOLDS } from "../constants";
-import { daysInMonth, isCurrentMonth, monthProgress } from "./date";
+import { STATUS_THRESHOLDS } from "../constants";
+import { daysInMonth, isCurrentMonth } from "./date";
 
 export type BudgetStatus = "safe" | "caution" | "warning" | "over";
 
@@ -122,27 +122,4 @@ export function projection(data: MonthlyBudgetData, today: Date = new Date()): P
   const projectedRemaining = summary.totalBudget - projectedUsed;
 
   return { dailyAverage, projectedUsed, projectedRemaining };
-}
-
-export interface PaceWarning {
-  isFast: boolean;
-  /** 월 진행률(%) */
-  monthProgressPct: number;
-  /** 전체 예산 사용률(%) */
-  usageRatePct: number;
-}
-
-/**
- * 지출 속도 경고 — 현재 월에만 판단.
- * 사용률 - 월 진행률 >= 15%p 이면 빠른 지출.
- * 과거/미래 월이면 null.
- */
-export function paceWarning(data: MonthlyBudgetData, today: Date = new Date()): PaceWarning | null {
-  if (!isCurrentMonth(data.month, today)) return null;
-
-  const usageRatePct = monthlySummary(data).totalRate;
-  const monthProgressPct = monthProgress(data.month, today) * 100;
-  const isFast = usageRatePct - monthProgressPct >= FAST_PACE_THRESHOLD_PP;
-
-  return { isFast, monthProgressPct, usageRatePct };
 }

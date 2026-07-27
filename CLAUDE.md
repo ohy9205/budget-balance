@@ -21,7 +21,7 @@ There is no lint script and no ESLint config (the lone `eslint-disable` comment 
 [BudgetContext.tsx](src/context/BudgetContext.tsx) is vestigial). `npm run build` — tsc with
 `strict`, `noUnusedLocals`, `noUnusedParameters` — is the only static check.
 
-The suite is [calculations.test.ts](src/lib/calculations.test.ts) alone (25 tests over
+The suite is [calculations.test.ts](src/lib/calculations.test.ts) alone (20 tests over
 `calculations.ts`, `format.ts`, `date.ts`) running with `environment: "node"`. There is no jsdom,
 Testing Library, or setup file, so adding a component test means adding that config first.
 
@@ -81,12 +81,9 @@ reload. Storage keys are versioned (`budget-balance:data:v1`, `budget-balance:pr
   [statusTheme.ts](src/components/statusTheme.ts).
 - Zero-budget-with-spending is deliberately reported as `100 + used` rather than `Infinity`, so it
   sorts as "over" without breaking formatting.
-- `projection()` and `paceWarning()` return **`null` for any month that isn't the current month**;
-  callers must handle null rather than render a meaningless forecast. Both accept an injectable
-  `today: Date` — tests rely on this, so keep the parameter when editing.
-- `paceWarning()` / `FAST_PACE_THRESHOLD_PP` and the context's `resetCategoryExpenses` have **no
-  caller in the UI**. `noUnusedLocals` won't flag them and `paceWarning` still has tests, so leave
-  them unless you drop those tests too.
+- `projection()` returns **`null` for any month that isn't the current month**; callers must handle
+  null rather than render a meaningless forecast. It accepts an injectable `today: Date` — tests rely
+  on this, so keep the parameter when editing.
 
 ### UI conventions
 

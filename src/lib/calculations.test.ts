@@ -4,12 +4,11 @@ import {
   allCategoryStats,
   categoryStats,
   monthlySummary,
-  paceWarning,
   projection,
   statusFromUsageRate,
 } from "./calculations";
 import { formatCurrency, formatPercent } from "./format";
-import { addMonth, daysInMonth, monthProgress } from "./date";
+import { daysInMonth } from "./date";
 
 const cat = (id: string, budget: number, target?: number, sortOrder = 0) => ({
   id,
@@ -127,34 +126,6 @@ describe("projection (현재 월만)", () => {
   });
 });
 
-describe("paceWarning (현재 월만)", () => {
-  it("월 50% 지났는데 80% 사용 → 빠른 지출", () => {
-    const data: MonthlyBudgetData = {
-      month: "2026-07",
-      categories: [cat("a", 100000)],
-      expenses: [exp("1", "a", 80000)],
-    };
-    const today = new Date(2026, 6, 15); // 15/31 ≈ 48.4%
-    const w = paceWarning(data, today)!;
-    expect(w.isFast).toBe(true);
-  });
-
-  it("사용률-진행률 차이가 15%p 미만이면 경고 없음", () => {
-    const data: MonthlyBudgetData = {
-      month: "2026-07",
-      categories: [cat("a", 100000)],
-      expenses: [exp("1", "a", 50000)],
-    };
-    const today = new Date(2026, 6, 15); // 48.4% 진행, 50% 사용
-    expect(paceWarning(data, today)!.isFast).toBe(false);
-  });
-
-  it("과거 월이면 null", () => {
-    const data: MonthlyBudgetData = { month: "2026-06", categories: [], expenses: [] };
-    expect(paceWarning(data, new Date(2026, 6, 15))).toBeNull();
-  });
-});
-
 describe("format & date 유틸", () => {
   it("formatCurrency 쉼표+원", () => {
     expect(formatCurrency(1234567)).toBe("1,234,567원");
@@ -168,13 +139,5 @@ describe("format & date 유틸", () => {
     expect(daysInMonth("2026-07")).toBe(31);
     expect(daysInMonth("2026-02")).toBe(28);
     expect(daysInMonth("2024-02")).toBe(29);
-  });
-  it("addMonth 경계 넘김", () => {
-    expect(addMonth("2026-12", 1)).toBe("2027-01");
-    expect(addMonth("2026-01", -1)).toBe("2025-12");
-  });
-  it("monthProgress: 과거 1, 미래 0", () => {
-    expect(monthProgress("2026-06", new Date(2026, 6, 10))).toBe(1);
-    expect(monthProgress("2026-08", new Date(2026, 6, 10))).toBe(0);
   });
 });

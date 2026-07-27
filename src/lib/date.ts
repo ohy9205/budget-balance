@@ -31,28 +31,10 @@ export function daysInMonth(month: string): number {
   return new Date(year, m, 0).getDate();
 }
 
-/** 월 이동: "YYYY-MM" + delta개월 → "YYYY-MM" */
-export function addMonth(month: string, delta: number): string {
-  const { year, month: m } = parseMonthKey(month);
-  const d = new Date(year, m - 1 + delta, 1);
-  return getMonthKey(d);
-}
-
 /** "YYYY-MM" → "YYYY년 M월" */
 export function formatMonthLabel(month: string): string {
   const { year, month: m } = parseMonthKey(month);
   return `${year}년 ${m}월`;
-}
-
-/**
- * 월 진행률(0~1). today가 해당 월 안에 있으면 오늘 일자 ÷ 총 일수,
- * 과거 월이면 1, 미래 월이면 0.
- */
-export function monthProgress(month: string, today: Date = new Date()): number {
-  const todayMonth = getMonthKey(today);
-  if (month < todayMonth) return 1;
-  if (month > todayMonth) return 0;
-  return today.getDate() / daysInMonth(month);
 }
 
 /** month가 today가 속한 현재 월인지 여부 */

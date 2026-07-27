@@ -53,6 +53,3 @@ export const STATUS_THRESHOLDS = {
   warning: 80, // 이상: 위험
   over: 100, // 초과: 예산 초과
 } as const;
-
-/** 지출 속도 경고 기준: 사용률이 월 진행률보다 이 수치(%p) 이상 높으면 경고 */
-export const FAST_PACE_THRESHOLD_PP = 15;
