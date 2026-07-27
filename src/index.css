@@ -31,13 +31,31 @@ body {
   max-width: 460px;
   min-height: 100dvh;
   margin: 0 auto;
-  background: var(--adaptiveBackground);
+  /* 카드(흰색)가 떠 보이도록 셸 바닥은 회색 */
+  background: var(--adaptiveGreyBackground);
   overflow-x: hidden;
 }
 
 .app-main {
   /* 상단: fixed TopNavigation 높이 / 하단: FixedBottomCTA 높이 */
-  padding: 56px 0 112px;
+  padding: 64px 0 112px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ── 섹션(회색 바닥 위의 흰 카드) ────────────────────────
+   ListHeader는 좌우 24px 여백을 스스로 가지므로, 카드(16px)
+   안쪽 행(16px)과 글머리를 맞추려고 8px만 더 민다. */
+.section-head {
+  margin: 0 8px;
+}
+
+.section-card {
+  margin: 0 16px;
+  padding: 6px 0;
+  border-radius: 20px;
+  background: var(--adaptiveBackground);
 }
 
 /* ── 상단 월 이동 ─────────────────────────────────────── */
@@ -53,7 +71,10 @@ body {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding: 20px 24px 24px;
+  margin: 0 16px;
+  padding: 20px;
+  border-radius: 20px;
+  background: var(--adaptiveBackground);
 }
 
 .summary-top {
@@ -75,19 +96,22 @@ body {
 }
 
 .summary-foot {
-  display: flex;
-  gap: 20px;
-  flex-wrap: wrap;
-  margin-top: 4px;
-  padding-top: 14px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  margin-top: 8px;
+  padding-top: 8px;
   border-top: 1px solid var(--adaptiveHairlineBorder);
-  justify-content: space-between;
 }
 
 .summary-stat {
   display: flex;
   flex-direction: column;
   gap: 2px;
+}
+
+/* 마지막 칸만 오른쪽 끝에 붙인다 */
+.summary-stat:nth-child(3) {
+  align-items: flex-end;
 }
 
 /* ── 목록 ─────────────────────────────────────────────── */
@@ -113,7 +137,7 @@ body {
   width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
 }
 
 .cat-line {
@@ -121,6 +145,24 @@ body {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
+}
+
+/* 항목명 + 상태 뱃지 / 쓴 금액 + 예산·남은 횟수 — 각각 한 줄로 붙인다 */
+.cat-name,
+.cat-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.cat-meta {
+  gap: 4px;
+}
+
+/* 진행 바는 두 줄 아래에서 살짝 띄운다 */
+.cat-bar {
+  margin-top: 4px;
 }
 
 .list-empty {

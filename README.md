@@ -72,7 +72,7 @@ budget-balance/
    ├─ App.tsx                      # TDS provider + 대시보드 조립, 시트/설정 열림 상태
    ├─ types.ts                     # 도메인 타입 + 입력 타입
    ├─ constants.ts                 # 기본 예산 항목 7개, 결제수단, 상태 임계값, 저장 키
-   ├─ index.css                    # 레이아웃 전용 (460px 컬럼, 간격) — 색·타이포는 TDS
+   ├─ index.css                    # 레이아웃 전용 (460px 컬럼, 간격, 흰 카드 면) — 색·타이포는 TDS
    ├─ context/
    │  └─ BudgetContext.tsx         # 상태 보관 + 영속화. 도메인 규칙은 갖지 않는다
    ├─ lib/                         # 순수 로직 (React·DOM 없음, 테스트가 있는 유일한 계층)

@@ -24,38 +24,41 @@ export function RecentExpenses({ expenses, categories, onEdit }: RecentExpensesP
 
   return (
     <section aria-label="최근 지출">
-      <ListHeader
-        title={
-          <ListHeader.TitleParagraph fontWeight="bold">최근 지출</ListHeader.TitleParagraph>
-        }
-        right={
-          <TextButton
-            size="small"
-            variant="clear"
-            color={adaptive.grey600}
-            aria-expanded={open}
-            onClick={() => setOpen((v) => !v)}
-          >
-            {`${expenses.length}건 · ${open ? "접기" : "펼치기"}`}
-          </TextButton>
-        }
-      />
+      <div className="section-head">
+        <ListHeader
+          title={
+            <ListHeader.TitleParagraph fontWeight="bold">최근 지출</ListHeader.TitleParagraph>
+          }
+          right={
+            <TextButton
+              size="small"
+              variant="clear"
+              color={adaptive.grey600}
+              aria-expanded={open}
+              onClick={() => setOpen((v) => !v)}
+            >
+              {`${expenses.length}건 · ${open ? "접기" : "펼치기"}`}
+            </TextButton>
+          }
+        />
+      </div>
 
       {open &&
         (recent.length === 0 ? (
-          <div className="list-empty">
+          <div className="section-card list-empty">
             <Paragraph typography="t7" color={adaptive.grey500} textAlign="center">
               <Paragraph.Text>아직 등록된 지출이 없습니다.</Paragraph.Text>
             </Paragraph>
           </div>
         ) : (
-          <div className="list-rows">
+          <div className="section-card list-rows">
             {recent.map((e) => (
               <ListRow
                 key={e.id}
                 as="button"
                 type="button"
                 className="exp-row"
+                horizontalPadding="small"
                 withTouchEffect
                 arrowType="right"
                 aria-label={`${categoryName(e.categoryId)} ${formatCurrency(e.amount)} 지출 수정`}

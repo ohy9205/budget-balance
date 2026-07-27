@@ -149,7 +149,12 @@ reload. Storage keys are versioned (`budget-balance:data:v1`, `budget-balance:pr
   `icon-arrow-left-small-mono`, `icon-arrow-right-small-mono`, `icon-arrow-up-mono`,
   `icon-arrow-down-mono`, `icon-refresh-mono`, `icon-x-circle-mono`.
 - [index.css](src/index.css)는 **레이아웃 전용**이다 (중앙 460px 컬럼, 섹션 간격, 시트/설정 화면
-  내부 여백). 색·모양·타이포는 넣지 않는다. `.app-shell`의 `transform: translateZ(0)`는 일부러
+  내부 여백). 색·모양·타이포는 넣지 않는다. 유일한 예외가 **섹션 카드 면**이다: 셸 바닥은
+  `--adaptiveGreyBackground`, 각 섹션(`.summary` / `.section-card`)은 `--adaptiveBackground` +
+  `border-radius`로 흰 카드가 된다. TDS에 카드 컴포넌트가 없어서 직접 그리는 것이며, 색은 반드시
+  `--adaptive*` 변수만 쓴다. 카드 바깥 좌우 여백은 16px이고 그 안의 `ListRow`는
+  `horizontalPadding="small"`(16px)이라 글머리가 32px에 선다 — `ListHeader`(자체 여백 24px)는
+  `.section-head`가 8px 밀어 같은 선에 맞춘다. 셋 중 하나만 바꾸면 정렬이 어긋난다. `.app-shell`의 `transform: translateZ(0)`는 일부러
   넣은 것 — TDS의 `TopNavigation fixed` / `FixedBottomCTA`가 뷰포트가 아니라 이 컬럼을 기준으로
   고정되게 하는 containing block이다. 지우면 데스크톱에서 화면 전체로 퍼진다.
 - **금액 입력은 전부 [AmountField.tsx](src/components/AmountField.tsx)를 쓴다** — `TextField`를 직접

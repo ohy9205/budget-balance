@@ -19,8 +19,8 @@ export const STATUS_BADGE: Record<
 /** 진행 바·수치 강조에 쓰는 상태색 */
 export const STATUS_COLOR: Record<BudgetStatus, string> = {
   safe: adaptive.blue500,
-  caution: adaptive.yellow600,
-  warning: adaptive.orange500,
+  caution: adaptive.yellow500,
+  warning: adaptive.orange700,
   over: adaptive.red500,
 };
 

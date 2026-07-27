@@ -100,24 +100,28 @@ function Dashboard() {
         ) : (
           <>
             <section aria-label="예산 항목">
-              <ListHeader
-                title={
-                  <ListHeader.TitleParagraph fontWeight="bold">
-                    예산 항목
-                  </ListHeader.TitleParagraph>
-                }
-                right={
-                  <ListHeader.RightText>{`${monthData.categories.length}개 항목`}</ListHeader.RightText>
-                }
-              />
-              <div className="list-rows">
-                {stats.map((s) => (
-                  <CategoryCard
-                    key={s.category.id}
-                    stats={s}
-                    onAddExpense={(categoryId) => setExpenseModal({ mode: "add", categoryId })}
-                  />
-                ))}
+              <div className="section-head">
+                <ListHeader
+                  title={
+                    <ListHeader.TitleParagraph fontWeight="bold">
+                      예산 항목
+                    </ListHeader.TitleParagraph>
+                  }
+                  right={
+                    <ListHeader.RightText>{`${monthData.categories.length}개 항목`}</ListHeader.RightText>
+                  }
+                />
+              </div>
+              <div className="section-card">
+                <div className="list-rows">
+                  {stats.map((s) => (
+                    <CategoryCard
+                      key={s.category.id}
+                      stats={s}
+                      onAddExpense={(categoryId) => setExpenseModal({ mode: "add", categoryId })}
+                    />
+                  ))}
+                </div>
               </div>
             </section>
 
