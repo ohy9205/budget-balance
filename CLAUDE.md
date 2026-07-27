@@ -21,11 +21,12 @@ There is no lint script and no ESLint config (the lone `eslint-disable` comment 
 [BudgetContext.tsx](src/context/BudgetContext.tsx) is vestigial). `npm run build` — tsc with
 `strict`, `noUnusedLocals`, `noUnusedParameters` — is the only static check.
 
-The suite is four files under [src/lib/](src/lib/) (81 tests) running with `environment: "node"`:
+The suite is five files under [src/lib/](src/lib/) (120 tests) running with `environment: "node"`:
 [calculations.test.ts](src/lib/calculations.test.ts) (also covers `format.ts` / `date.ts`),
 [category.test.ts](src/lib/category.test.ts), [expense.test.ts](src/lib/expense.test.ts),
-[month.test.ts](src/lib/month.test.ts). There is no jsdom, Testing Library, or setup file, so adding
-a component test means adding that config first.
+[month.test.ts](src/lib/month.test.ts), [storage.test.ts](src/lib/storage.test.ts) (`sanitizeMonth`
+only — `loadStore`/`saveStore` need a `localStorage` the node environment doesn't have). There is no
+jsdom, Testing Library, or setup file, so adding a component test means adding that config first.
 
 ## Architecture
 
@@ -37,9 +38,14 @@ Three layers, deliberately separated:
 1. **Pure logic** — [src/lib/](src/lib/) + [types.ts](src/types.ts) + [constants.ts](src/constants.ts).
    No React, no DOM (except `storage.ts` touching `localStorage`). `calculations.ts` (budget math),
    `category.ts` / `expense.ts` / `month.ts` (domain rules and state transitions), `date.ts`,
-   `format.ts`, `id.ts` are pure functions, and this is the only layer with tests. `id.ts`'s `newId()`
-   is the one exception (random) — that's why the transition functions take `id`/`createdAt` as
-   arguments instead of generating them. Domain input types (`NewExpenseInput`,
+   `format.ts`, `id.ts` are pure functions, and this is the only layer with tests. **`month.ts` owns
+   month *values*** (`createSeededMonth`, `copyBudgetFrom`, `findPreviousMonthWithData`,
+   `removeMonth`) and **`storage.ts` owns only persistence** (sanitizers + load/save) — keep that
+   split; building a month is not a storage concern. `id.ts`'s `newId()` is the one exception to
+   purity (random), so functions that need ids take them as arguments — either a single
+   `id`/`createdAt` (`createExpense`, `createCategory`) or an injectable `nextId: () => string`
+   defaulting to `newId` (`createSeededMonth`, `copyBudgetFrom`), the same pattern as
+   `projection(data, today)`. Tests pass a counter. Domain input types (`NewExpenseInput`,
    `NewCategoryInput`) live in `types.ts`, **not** in the context file — components import types from
    here and only `useBudget`/`BudgetProvider` from layer 2. **Logic a component needs but React does
    not belongs here, not in the component** — e.g. `categoryDefaultDiff`, `resolveInitialCategoryId`,
@@ -50,8 +56,9 @@ Three layers, deliberately separated:
    is a no-op when the selected month has no data. Two `useEffect`s persist store/prefs on any change.
    **The provider owns no domain rules** — each action is a `setStore`/`mutateMonth` wrapper around a
    pure transition in layer 1 (`createExpense`, `applyExpenseInput`, `createCategory`,
-   `moveCategoryInList`, `resetCategoryToSeed`, `findPreviousMonthWithData`, `addMonth`). New
-   behaviour goes in the pure function with a test, not inline here.
+   `moveCategoryInList`, `resetCategoryToSeed`, `findPreviousMonthWithData`, `removeMonth`,
+   `createSeededMonth`, `copyBudgetFrom`, `addMonth`). New behaviour goes in the pure function with a
+   test, not inline here.
    `moveCategoryInList` returns **the same array reference** when the move is impossible, and
    `moveCategory` relies on that to leave state untouched — don't "simplify" it into always copying.
    **No `useCallback`/`useMemo` for the actions** — the context `value` is a fresh object every
@@ -87,8 +94,10 @@ Three layers, deliberately separated:
   name / monthlyBudget / targetExpenseAmount from [constants.ts](src/constants.ts) even after the
   name was edited. Manually added categories have no `seedKey` and no default to return to.
   `updateCategory`'s patch type excludes it; `sanitizeCategory` drops unknown keys and backfills
-  pre-`seedKey` data by matching the stored name against seed names. **Editing a seed entry's
-  `name`/amounts changes what "기본값" means for existing months; changing its `key` orphans them.**
+  pre-`seedKey` data by matching the stored name against seed names — which also means a **manually
+  added** category whose name happens to equal a seed name picks up that `seedKey` on the next load
+  (documented in [storage.test.ts](src/lib/storage.test.ts)). **Editing a seed entry's `name`/amounts
+  changes what "기본값" means for existing months; changing its `key` orphans them.**
 - Date strings are local-time formatted (`getMonthKey`/`getDateKey` use `getFullYear()` etc., not
   `toISOString`) — don't swap in UTC-based formatting.
 

@@ -13,7 +13,6 @@ import {
   STORAGE_KEY,
   STORE_VERSION,
 } from "../constants";
-import { sortByOrder } from "./category";
 import { isValidMonthKey } from "./date";
 import { newId } from "./id";
 
@@ -144,29 +143,4 @@ export function savePrefs(prefs: Prefs): void {
   }
 }
 
-/** 기본 시드로 새 월 데이터 생성 */
-export function createSeededMonth(month: string): MonthlyBudgetData {
-  return {
-    month,
-    categories: DEFAULT_CATEGORY_SEED.map(({ key, ...c }) => ({ ...c, id: newId(), seedKey: key })),
-    expenses: [],
-  };
-}
-
-/** 다른 월의 예산 항목(금액 포함)만 복사해 새 월 생성 (지출은 복사하지 않음, id 새로 발급) */
-export function copyBudgetFrom(source: MonthlyBudgetData, targetMonth: string): MonthlyBudgetData {
-  return {
-    month: targetMonth,
-    categories: sortByOrder(source.categories).map((c) => ({
-      id: newId(),
-      name: c.name,
-      monthlyBudget: c.monthlyBudget,
-      targetExpenseAmount: c.targetExpenseAmount,
-      sortOrder: c.sortOrder,
-      // 기본 항목 여부는 월을 넘어가도 유지된다 (id만 새로 발급)
-      seedKey: c.seedKey,
-    })),
-    expenses: [],
-  };
-}
 

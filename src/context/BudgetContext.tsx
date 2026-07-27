@@ -11,15 +11,13 @@ import { createCategory, moveCategoryInList, resetCategoryToSeed } from "../lib/
 import { addMonth, getMonthKey } from "../lib/date";
 import { applyExpenseInput, createExpense } from "../lib/expense";
 import { newId } from "../lib/id";
-import { findPreviousMonthWithData } from "../lib/month";
 import {
   copyBudgetFrom,
   createSeededMonth,
-  loadPrefs,
-  loadStore,
-  savePrefs,
-  saveStore,
-} from "../lib/storage";
+  findPreviousMonthWithData,
+  removeMonth,
+} from "../lib/month";
+import { loadPrefs, loadStore, savePrefs, saveStore } from "../lib/storage";
 
 export interface BudgetContextValue {
   currentMonth: string;
@@ -171,11 +169,7 @@ export function BudgetProvider({ children }: { children: ReactNode }) {
   }
 
   function resetCurrentMonth() {
-    setStore((prev) => {
-      const next = { ...prev.months };
-      delete next[currentMonth];
-      return { ...prev, months: next };
-    });
+    setStore((prev) => ({ ...prev, months: removeMonth(prev.months, currentMonth) }));
   }
 
   const value: BudgetContextValue = {

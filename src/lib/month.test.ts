@@ -1,11 +1,23 @@
 import { describe, expect, it } from "vitest";
-import type { MonthlyBudgetData } from "../types";
-import { findPreviousMonthWithData } from "./month";
+import type { BudgetCategory, Expense, MonthlyBudgetData } from "../types";
+import { DEFAULT_CATEGORY_SEED } from "../constants";
+import {
+  copyBudgetFrom,
+  createSeededMonth,
+  findPreviousMonthWithData,
+  removeMonth,
+} from "./month";
 
 const month = (key: string): MonthlyBudgetData => ({ month: key, categories: [], expenses: [] });
 
 const store = (...keys: string[]): Record<string, MonthlyBudgetData> =>
   Object.fromEntries(keys.map((k) => [k, month(k)]));
+
+/** 결정론적 id 발급기 — 실제 `newId`(난수) 대신 넣는다 */
+const idSeq = () => {
+  let n = 0;
+  return () => `id${++n}`;
+};
 
 describe("findPreviousMonthWithData", () => {
   it("바로 앞 월이 없으면 그보다 앞선 가장 최근 월", () => {
@@ -26,5 +38,132 @@ describe("findPreviousMonthWithData", () => {
 
   it("빈 저장소면 null", () => {
     expect(findPreviousMonthWithData({}, "2026-07")).toBeNull();
+  });
+});
+
+describe("removeMonth", () => {
+  it("해당 월만 지운다", () => {
+    const months = store("2026-06", "2026-07");
+    expect(Object.keys(removeMonth(months, "2026-07"))).toEqual(["2026-06"]);
+  });
+
+  it("없는 월이면 그대로", () => {
+    const months = store("2026-06");
+    expect(Object.keys(removeMonth(months, "2026-07"))).toEqual(["2026-06"]);
+  });
+
+  it("원본 맵을 바꾸지 않는다", () => {
+    const months = store("2026-06", "2026-07");
+    removeMonth(months, "2026-07");
+    expect(Object.keys(months).sort()).toEqual(["2026-06", "2026-07"]);
+  });
+});
+
+describe("createSeededMonth", () => {
+  const created = createSeededMonth("2026-07", idSeq());
+
+  it("기본 항목 전체를 시드 값 그대로 만든다", () => {
+    expect(created.categories).toHaveLength(DEFAULT_CATEGORY_SEED.length);
+    expect(created.categories.map((c) => c.name)).toEqual(
+      DEFAULT_CATEGORY_SEED.map((s) => s.name),
+    );
+    expect(created.categories.map((c) => c.monthlyBudget)).toEqual(
+      DEFAULT_CATEGORY_SEED.map((s) => s.monthlyBudget),
+    );
+  });
+
+  it("seedKey로 시드 key를 붙인다 (나중에 기본값으로 되돌릴 수 있게)", () => {
+    expect(created.categories.map((c) => c.seedKey)).toEqual(
+      DEFAULT_CATEGORY_SEED.map((s) => s.key),
+    );
+  });
+
+  it("시드의 key 필드 자체는 항목에 남지 않는다", () => {
+    expect(created.categories[0]).not.toHaveProperty("key");
+  });
+
+  it("월 키를 그대로 쓰고 지출은 비어 있다", () => {
+    expect(created.month).toBe("2026-07");
+    expect(created.expenses).toEqual([]);
+  });
+
+  it("항목마다 다른 id를 발급한다", () => {
+    const ids = createSeededMonth("2026-07").categories.map((c) => c.id);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+});
+
+describe("copyBudgetFrom", () => {
+  const cat = (patch: Partial<BudgetCategory>): BudgetCategory => ({
+    id: "src-id",
+    name: "장보기",
+    monthlyBudget: 100000,
+    sortOrder: 0,
+    ...patch,
+  });
+
+  const expense: Expense = {
+    id: "e1",
+    categoryId: "src-a",
+    amount: 5000,
+    paymentMethod: "credit",
+    date: "2026-06-10",
+    createdAt: "2026-06-10T00:00:00.000Z",
+  };
+
+  const source: MonthlyBudgetData = {
+    month: "2026-06",
+    categories: [
+      cat({ id: "src-b", name: "교통비", monthlyBudget: 80000, sortOrder: 1 }),
+      cat({ id: "src-a", name: "장보기", sortOrder: 0, seedKey: "groceries" }),
+    ],
+    expenses: [expense],
+  };
+
+  it("대상 월 키로 만든다", () => {
+    expect(copyBudgetFrom(source, "2026-07", idSeq()).month).toBe("2026-07");
+  });
+
+  it("지출은 복사하지 않는다", () => {
+    expect(copyBudgetFrom(source, "2026-07", idSeq()).expenses).toEqual([]);
+  });
+
+  it("항목 id를 새로 발급한다 (월끼리 id를 공유하지 않는다)", () => {
+    const copied = copyBudgetFrom(source, "2026-07", idSeq());
+    expect(copied.categories.map((c) => c.id)).toEqual(["id1", "id2"]);
+    const sourceIds = source.categories.map((c) => c.id);
+    expect(copied.categories.every((c) => !sourceIds.includes(c.id))).toBe(true);
+  });
+
+  it("sortOrder 오름차순으로 담는다", () => {
+    expect(copyBudgetFrom(source, "2026-07", idSeq()).categories.map((c) => c.name)).toEqual([
+      "장보기",
+      "교통비",
+    ]);
+  });
+
+  it("이름·금액·목표액·정렬 순서는 그대로 유지한다", () => {
+    const withTarget: MonthlyBudgetData = {
+      ...source,
+      categories: [cat({ monthlyBudget: 270000, targetExpenseAmount: 25000, sortOrder: 3 })],
+    };
+    const [copied] = copyBudgetFrom(withTarget, "2026-07", idSeq()).categories;
+    expect(copied.name).toBe("장보기");
+    expect(copied.monthlyBudget).toBe(270000);
+    expect(copied.targetExpenseAmount).toBe(25000);
+    expect(copied.sortOrder).toBe(3);
+  });
+
+  it("seedKey는 월을 넘어가도 유지한다", () => {
+    const copied = copyBudgetFrom(source, "2026-07", idSeq()).categories;
+    expect(copied.find((c) => c.name === "장보기")?.seedKey).toBe("groceries");
+    expect(copied.find((c) => c.name === "교통비")?.seedKey).toBeUndefined();
+  });
+
+  it("원본 월을 바꾸지 않는다", () => {
+    copyBudgetFrom(source, "2026-07", idSeq());
+    expect(source.month).toBe("2026-06");
+    expect(source.categories.map((c) => c.id)).toEqual(["src-b", "src-a"]);
+    expect(source.expenses).toHaveLength(1);
   });
 });
