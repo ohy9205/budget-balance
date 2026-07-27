@@ -195,6 +195,7 @@ reload. Storage keys are versioned (`budget-balance:data:v1`, `budget-balance:pr
 
 ### README
 
-[README.md](README.md)는 UI 개편 이전 문서라 화면·컴포넌트 구성 설명이 현재 코드와 다르다.
-**코드를 먼저 믿을 것.** 여전히 맞는 부분은 앱의 목적, 실행 명령, 예산 경고 규칙 표, 저장 키와
-정수 원 단위 규칙이다.
+[README.md](README.md)는 현재 코드 기준으로 다시 쓴 문서다(기능·파일 구조·저장 구조).
+사람이 읽는 소개 문서이므로 여기 CLAUDE.md와 역할이 겹치지 않게 유지한다 — README는 "무엇을
+하는 앱인가", CLAUDE.md는 "코드를 고칠 때 지킬 제약". 화면 구성이나 파일 배치를 바꾸면
+README의 기능 목록·파일 구조도 같이 고칠 것. 충돌하면 **코드가 우선**이다.
