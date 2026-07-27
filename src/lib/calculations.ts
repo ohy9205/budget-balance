@@ -1,11 +1,7 @@
 import type { BudgetCategory, Expense, MonthlyBudgetData, PaymentMethod } from "../types";
 import { STATUS_THRESHOLDS } from "../constants";
+import { sortByOrder } from "./category";
 import { daysInMonth, isCurrentMonth } from "./date";
-
-/** `sortOrder` 오름차순으로 정렬한 새 배열 (원본은 그대로 둔다) */
-export function sortByOrder<T extends { sortOrder: number }>(items: T[]): T[] {
-  return [...items].sort((a, b) => a.sortOrder - b.sortOrder);
-}
 
 export type BudgetStatus = "safe" | "caution" | "warning" | "over";
 

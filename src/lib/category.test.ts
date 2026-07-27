@@ -7,6 +7,7 @@ import {
   categoryDefaultDiff,
   isValidNewCategory,
   resolveInitialCategoryId,
+  sortByOrder,
   type NewCategoryFields,
 } from "./category";
 import { formatCurrency } from "./format";
@@ -29,6 +30,23 @@ const fields = (patch: Partial<NewCategoryFields> = {}): NewCategoryFields => ({
   monthlyBudget: 50000,
   targetExpenseAmount: undefined,
   ...patch,
+});
+
+describe("sortByOrder", () => {
+  it("sortOrder 오름차순 정렬", () => {
+    const items = [
+      fromSeed({ id: "b", sortOrder: 2 }),
+      fromSeed({ id: "a", sortOrder: 0 }),
+      fromSeed({ id: "c", sortOrder: 1 }),
+    ];
+    expect(sortByOrder(items).map((i) => i.id)).toEqual(["a", "c", "b"]);
+  });
+
+  it("원본 배열을 바꾸지 않는다", () => {
+    const items = [fromSeed({ id: "b", sortOrder: 1 }), fromSeed({ id: "a", sortOrder: 0 })];
+    sortByOrder(items);
+    expect(items.map((i) => i.id)).toEqual(["b", "a"]);
+  });
 });
 
 describe("categoryDefaultDiff", () => {

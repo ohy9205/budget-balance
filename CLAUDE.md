@@ -99,8 +99,8 @@ reload. Storage keys are versioned (`budget-balance:data:v1`, `budget-balance:pr
 - Zero-budget-with-spending is deliberately reported as `100 + used` rather than `Infinity`, so it
   sorts as "over" without breaking formatting. That rule lives **only** in `computeUsageRate`
   (used by both `categoryStats` and `monthlySummary`) — don't re-inline it.
-- `sortByOrder()` is the single `sortOrder` comparator (categories are always displayed ascending);
-  it copies before sorting, so callers never mutate store arrays.
+- `sortByOrder()` (in `category.ts`) is the single `sortOrder` comparator — categories are always
+  displayed ascending, and it copies before sorting so callers never mutate store arrays.
 - `projection()` returns **`null` for any month that isn't the current month**; callers must handle
   null rather than render a meaningless forecast. It accepts an injectable `today: Date` — tests rely
   on this, so keep the parameter when editing.

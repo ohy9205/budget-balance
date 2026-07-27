@@ -13,7 +13,7 @@ import {
   STORAGE_KEY,
   STORE_VERSION,
 } from "../constants";
-import { sortByOrder } from "./calculations";
+import { sortByOrder } from "./category";
 import { isValidMonthKey } from "./date";
 
 function newId(): string {

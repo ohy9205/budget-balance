@@ -9,7 +9,7 @@ import type {
   Prefs,
 } from "../types";
 import { findCategorySeed } from "../constants";
-import { sortByOrder } from "../lib/calculations";
+import { sortByOrder } from "../lib/category";
 import { getMonthKey } from "../lib/date";
 import {
   copyBudgetFrom,

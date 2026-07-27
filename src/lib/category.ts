@@ -7,6 +7,14 @@ import { formatCurrency } from "./format";
 /** 지출은 남았는데 항목이 삭제된 경우 표시할 이름 */
 const UNKNOWN_CATEGORY_NAME = "(삭제된 항목)";
 
+/**
+ * `sortOrder` 오름차순으로 정렬한 새 배열 (원본은 그대로 둔다).
+ * 항목은 어디서든 이 순서로 보여 주므로 정렬 비교자는 여기 하나만 둔다.
+ */
+export function sortByOrder<T extends { sortOrder: number }>(items: T[]): T[] {
+  return [...items].sort((a, b) => a.sortOrder - b.sortOrder);
+}
+
 /** 기본 예산값과 달라진 설정만 "월 예산 270,000원" 형태로 나열 (기본 항목이 아니거나 같으면 빈 배열) */
 export function categoryDefaultDiff(c: BudgetCategory): string[] {
   const seed = findCategorySeed(c.seedKey);

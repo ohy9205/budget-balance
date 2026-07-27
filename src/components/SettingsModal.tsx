@@ -9,8 +9,7 @@ import {
 import { adaptive } from "@toss/tds-colors";
 import type { BudgetCategory, BudgetStore } from "../types";
 import { useBudget } from "../context/BudgetContext";
-import { sortByOrder } from "../lib/calculations";
-import { categoryDefaultDiff } from "../lib/category";
+import { categoryDefaultDiff, sortByOrder } from "../lib/category";
 import { formatMonthLabel } from "../lib/date";
 import { useBodyScrollLock } from "../hooks/useBodyScrollLock";
 import { useEscapeKey } from "../hooks/useEscapeKey";
