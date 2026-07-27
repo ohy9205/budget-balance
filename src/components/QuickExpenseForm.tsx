@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   BottomSheet,
   Button,
@@ -69,10 +69,7 @@ export function QuickExpenseForm({
   onRequestDelete,
   onClose,
 }: QuickExpenseFormProps) {
-  const sortedCategories = useMemo(
-    () => [...categories].sort((a, b) => a.sortOrder - b.sortOrder),
-    [categories],
-  );
+  const sortedCategories = [...categories].sort((a, b) => a.sortOrder - b.sortOrder);
 
   const firstCategoryId = sortedCategories[0]?.id ?? "";
   const preferredCategoryId = editing?.categoryId ?? defaultCategoryId;
@@ -89,7 +86,7 @@ export function QuickExpenseForm({
 
   // 닫힘 애니메이션을 재생한 뒤 호출부에 알리고, 후처리(삭제 요청 등)를 이어서 실행한다.
   const [open, setOpen] = useState(true);
-  const close = useCallback(() => setOpen(false), []);
+  const close = () => setOpen(false);
   const afterExitRef = useRef<(() => void) | null>(null);
 
   const activeCatName = sortedCategories.find((c) => c.id === categoryId)?.name ?? "";

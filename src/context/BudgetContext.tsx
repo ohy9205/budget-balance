@@ -1,12 +1,4 @@
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-  type ReactNode,
-} from "react";
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import type {
   BudgetCategory,
   BudgetStore,
@@ -91,34 +83,31 @@ export function BudgetProvider({ children }: { children: ReactNode }) {
   }, [store.months, currentMonth]);
 
   /** 현재 월 데이터를 갱신하는 헬퍼 (없으면 무시) */
-  const mutateMonth = useCallback(
-    (fn: (data: MonthlyBudgetData) => MonthlyBudgetData) => {
-      setStore((prev) => {
-        const existing = prev.months[currentMonth];
-        if (!existing) return prev;
-        return { ...prev, months: { ...prev.months, [currentMonth]: fn(existing) } };
-      });
-    },
-    [currentMonth],
-  );
+  function mutateMonth(fn: (data: MonthlyBudgetData) => MonthlyBudgetData) {
+    setStore((prev) => {
+      const existing = prev.months[currentMonth];
+      if (!existing) return prev;
+      return { ...prev, months: { ...prev.months, [currentMonth]: fn(existing) } };
+    });
+  }
 
-  const goToPreviousMonth = useCallback(() => {
+  function goToPreviousMonth() {
     setCurrentMonth((m) => {
       const [y, mm] = m.split("-").map(Number);
       const d = new Date(y, mm - 2, 1);
       return getMonthKey(d);
     });
-  }, []);
+  }
 
-  const goToNextMonth = useCallback(() => {
+  function goToNextMonth() {
     setCurrentMonth((m) => {
       const [y, mm] = m.split("-").map(Number);
       const d = new Date(y, mm, 1);
       return getMonthKey(d);
     });
-  }, []);
+  }
 
-  const createEmptyMonthFromSeed = useCallback(() => {
+  function createEmptyMonthFromSeed() {
     setStore((prev) => {
       if (prev.months[currentMonth]) return prev;
       return {
@@ -126,9 +115,9 @@ export function BudgetProvider({ children }: { children: ReactNode }) {
         months: { ...prev.months, [currentMonth]: createSeededMonth(currentMonth) },
       };
     });
-  }, [currentMonth]);
+  }
 
-  const copyFromPreviousMonth = useCallback(() => {
+  function copyFromPreviousMonth() {
     setStore((prev) => {
       if (prev.months[currentMonth]) return prev;
       const earlier = Object.keys(prev.months)
@@ -141,151 +130,133 @@ export function BudgetProvider({ children }: { children: ReactNode }) {
         months: { ...prev.months, [currentMonth]: copyBudgetFrom(source, currentMonth) },
       };
     });
-  }, [currentMonth]);
+  }
 
-  const addExpense = useCallback(
-    (input: NewExpenseInput) => {
-      const expense: Expense = {
+  function addExpense(input: NewExpenseInput) {
+    const expense: Expense = {
+      id: newId(),
+      categoryId: input.categoryId,
+      amount: Math.round(input.amount),
+      paymentMethod: input.paymentMethod,
+      date: input.date,
+      memo: input.memo?.trim() ? input.memo.trim() : undefined,
+      createdAt: new Date().toISOString(),
+    };
+    mutateMonth((data) => ({ ...data, expenses: [...data.expenses, expense] }));
+    setPrefs((p) => ({
+      ...p,
+      lastCategoryId: input.categoryId,
+      lastPaymentMethod: input.paymentMethod,
+    }));
+  }
+
+  function updateExpense(id: string, input: NewExpenseInput) {
+    mutateMonth((data) => ({
+      ...data,
+      expenses: data.expenses.map((e) =>
+        e.id === id
+          ? {
+              ...e,
+              categoryId: input.categoryId,
+              amount: Math.round(input.amount),
+              paymentMethod: input.paymentMethod,
+              date: input.date,
+              memo: input.memo?.trim() ? input.memo.trim() : undefined,
+            }
+          : e,
+      ),
+    }));
+  }
+
+  function deleteExpense(id: string) {
+    mutateMonth((data) => ({ ...data, expenses: data.expenses.filter((e) => e.id !== id) }));
+  }
+
+  function addCategory(input: {
+    name: string;
+    monthlyBudget: number;
+    targetExpenseAmount?: number;
+  }) {
+    mutateMonth((data) => {
+      const maxOrder = data.categories.reduce((m, c) => Math.max(m, c.sortOrder), -1);
+      const category: BudgetCategory = {
         id: newId(),
-        categoryId: input.categoryId,
-        amount: Math.round(input.amount),
-        paymentMethod: input.paymentMethod,
-        date: input.date,
-        memo: input.memo?.trim() ? input.memo.trim() : undefined,
-        createdAt: new Date().toISOString(),
+        name: input.name.trim(),
+        monthlyBudget: Math.max(0, Math.round(input.monthlyBudget)),
+        targetExpenseAmount:
+          input.targetExpenseAmount && input.targetExpenseAmount > 0
+            ? Math.round(input.targetExpenseAmount)
+            : undefined,
+        sortOrder: maxOrder + 1,
+        // 직접 추가한 항목은 기본 예산에 대응하는 값이 없다 (되돌리기 대상 아님)
       };
-      mutateMonth((data) => ({ ...data, expenses: [...data.expenses, expense] }));
-      setPrefs((p) => ({
-        ...p,
-        lastCategoryId: input.categoryId,
-        lastPaymentMethod: input.paymentMethod,
-      }));
-    },
-    [mutateMonth],
-  );
+      return { ...data, categories: [...data.categories, category] };
+    });
+  }
 
-  const updateExpense = useCallback(
-    (id: string, input: NewExpenseInput) => {
-      mutateMonth((data) => ({
-        ...data,
-        expenses: data.expenses.map((e) =>
-          e.id === id
-            ? {
-                ...e,
-                categoryId: input.categoryId,
-                amount: Math.round(input.amount),
-                paymentMethod: input.paymentMethod,
-                date: input.date,
-                memo: input.memo?.trim() ? input.memo.trim() : undefined,
-              }
-            : e,
-        ),
-      }));
-    },
-    [mutateMonth],
-  );
+  function updateCategory(id: string, patch: Partial<Omit<BudgetCategory, "id" | "seedKey">>) {
+    mutateMonth((data) => ({
+      ...data,
+      categories: data.categories.map((c) => (c.id === id ? { ...c, ...patch } : c)),
+    }));
+  }
 
-  const deleteExpense = useCallback(
-    (id: string) => {
-      mutateMonth((data) => ({ ...data, expenses: data.expenses.filter((e) => e.id !== id) }));
-    },
-    [mutateMonth],
-  );
+  function deleteCategory(id: string) {
+    // 항목 삭제 시 해당 항목의 지출도 함께 삭제 (고아 지출 방지)
+    mutateMonth((data) => ({
+      ...data,
+      categories: data.categories.filter((c) => c.id !== id),
+      expenses: data.expenses.filter((e) => e.categoryId !== id),
+    }));
+  }
 
-  const addCategory = useCallback(
-    (input: { name: string; monthlyBudget: number; targetExpenseAmount?: number }) => {
-      mutateMonth((data) => {
-        const maxOrder = data.categories.reduce((m, c) => Math.max(m, c.sortOrder), -1);
-        const category: BudgetCategory = {
-          id: newId(),
-          name: input.name.trim(),
-          monthlyBudget: Math.max(0, Math.round(input.monthlyBudget)),
-          targetExpenseAmount:
-            input.targetExpenseAmount && input.targetExpenseAmount > 0
-              ? Math.round(input.targetExpenseAmount)
-              : undefined,
-          sortOrder: maxOrder + 1,
-          // 직접 추가한 항목은 기본 예산에 대응하는 값이 없다 (되돌리기 대상 아님)
+  function moveCategory(id: string, direction: "up" | "down") {
+    mutateMonth((data) => {
+      const sorted = [...data.categories].sort((a, b) => a.sortOrder - b.sortOrder);
+      const idx = sorted.findIndex((c) => c.id === id);
+      if (idx === -1) return data;
+      const swapWith = direction === "up" ? idx - 1 : idx + 1;
+      if (swapWith < 0 || swapWith >= sorted.length) return data;
+      [sorted[idx], sorted[swapWith]] = [sorted[swapWith], sorted[idx]];
+      // sortOrder 재부여
+      const reordered = sorted.map((c, i) => ({ ...c, sortOrder: i }));
+      return { ...data, categories: reordered };
+    });
+  }
+
+  function resetCategoryToDefault(id: string) {
+    // 지출·정렬 순서는 건드리지 않고 설정값(이름/월 예산/목표액)만 기본 예산값으로 복원
+    mutateMonth((data) => ({
+      ...data,
+      categories: data.categories.map((c) => {
+        if (c.id !== id) return c;
+        const seed = findCategorySeed(c.seedKey);
+        if (!seed) return c; // 직접 추가한 항목은 되돌릴 기본값이 없다
+        return {
+          ...c,
+          name: seed.name,
+          monthlyBudget: seed.monthlyBudget,
+          targetExpenseAmount: seed.targetExpenseAmount,
         };
-        return { ...data, categories: [...data.categories, category] };
-      });
-    },
-    [mutateMonth],
-  );
+      }),
+    }));
+  }
 
-  const updateCategory = useCallback(
-    (id: string, patch: Partial<Omit<BudgetCategory, "id" | "seedKey">>) => {
-      mutateMonth((data) => ({
-        ...data,
-        categories: data.categories.map((c) => (c.id === id ? { ...c, ...patch } : c)),
-      }));
-    },
-    [mutateMonth],
-  );
-
-  const deleteCategory = useCallback(
-    (id: string) => {
-      // 항목 삭제 시 해당 항목의 지출도 함께 삭제 (고아 지출 방지)
-      mutateMonth((data) => ({
-        ...data,
-        categories: data.categories.filter((c) => c.id !== id),
-        expenses: data.expenses.filter((e) => e.categoryId !== id),
-      }));
-    },
-    [mutateMonth],
-  );
-
-  const moveCategory = useCallback(
-    (id: string, direction: "up" | "down") => {
-      mutateMonth((data) => {
-        const sorted = [...data.categories].sort((a, b) => a.sortOrder - b.sortOrder);
-        const idx = sorted.findIndex((c) => c.id === id);
-        if (idx === -1) return data;
-        const swapWith = direction === "up" ? idx - 1 : idx + 1;
-        if (swapWith < 0 || swapWith >= sorted.length) return data;
-        [sorted[idx], sorted[swapWith]] = [sorted[swapWith], sorted[idx]];
-        // sortOrder 재부여
-        const reordered = sorted.map((c, i) => ({ ...c, sortOrder: i }));
-        return { ...data, categories: reordered };
-      });
-    },
-    [mutateMonth],
-  );
-
-  const resetCategoryToDefault = useCallback(
-    (id: string) => {
-      // 지출·정렬 순서는 건드리지 않고 설정값(이름/월 예산/목표액)만 기본 예산값으로 복원
-      mutateMonth((data) => ({
-        ...data,
-        categories: data.categories.map((c) => {
-          if (c.id !== id) return c;
-          const seed = findCategorySeed(c.seedKey);
-          if (!seed) return c; // 직접 추가한 항목은 되돌릴 기본값이 없다
-          return {
-            ...c,
-            name: seed.name,
-            monthlyBudget: seed.monthlyBudget,
-            targetExpenseAmount: seed.targetExpenseAmount,
-          };
-        }),
-      }));
-    },
-    [mutateMonth],
-  );
-
-  const resetCurrentMonth = useCallback(() => {
+  function resetCurrentMonth() {
     setStore((prev) => {
       const next = { ...prev.months };
       delete next[currentMonth];
       return { ...prev, months: next };
     });
-  }, [currentMonth]);
+  }
 
-  const exportStore = useCallback(() => store, [store]);
+  function exportStore() {
+    return store;
+  }
 
-  const importStore = useCallback((imported: BudgetStore) => {
+  function importStore(imported: BudgetStore) {
     setStore(imported);
-  }, []);
+  }
 
   const value: BudgetContextValue = {
     currentMonth,

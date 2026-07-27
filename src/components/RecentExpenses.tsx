@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { ListHeader, ListRow, Paragraph, TextButton } from "@toss/tds-mobile";
 import { adaptive } from "@toss/tds-colors";
 import type { BudgetCategory, Expense } from "../types";
@@ -17,22 +17,16 @@ const RECENT_LIMIT = 6;
 export function RecentExpenses({ expenses, categories, onEdit }: RecentExpensesProps) {
   const [open, setOpen] = useState(true);
 
-  const categoryName = useMemo(() => {
-    const map = new Map(categories.map((c) => [c.id, c.name]));
-    return (id: string) => map.get(id) ?? "(삭제된 항목)";
-  }, [categories]);
+  const nameById = new Map(categories.map((c) => [c.id, c.name]));
+  const categoryName = (id: string) => nameById.get(id) ?? "(삭제된 항목)";
 
   // 최신순: createdAt 내림차순 (동률이면 date 내림차순)
-  const recent = useMemo(
-    () =>
-      [...expenses]
-        .sort((a, b) => {
-          if (a.createdAt !== b.createdAt) return a.createdAt < b.createdAt ? 1 : -1;
-          return a.date < b.date ? 1 : -1;
-        })
-        .slice(0, RECENT_LIMIT),
-    [expenses],
-  );
+  const recent = [...expenses]
+    .sort((a, b) => {
+      if (a.createdAt !== b.createdAt) return a.createdAt < b.createdAt ? 1 : -1;
+      return a.date < b.date ? 1 : -1;
+    })
+    .slice(0, RECENT_LIMIT);
 
   return (
     <section aria-label="최근 지출">

@@ -38,6 +38,11 @@ Three layers, deliberately separated:
 2. **State** — [src/context/BudgetContext.tsx](src/context/BudgetContext.tsx). Holds the whole
    `BudgetStore` plus `currentMonth` and `prefs`; every mutation goes through `mutateMonth`, which
    is a no-op when the selected month has no data. Two `useEffect`s persist store/prefs on any change.
+   **No `useCallback`/`useMemo` for the actions** — the context `value` is a fresh object every
+   render and no consumer is `React.memo`ed, so memoizing the callbacks blocks nothing. If profiling
+   ever shows a real cost, fix it with `useMemo` on `value` + `React.memo` on the hot consumer, not
+   with scattered `useCallback`. (`previousMonthWithData` keeps its `useMemo` — it walks
+   `store.months`.)
 3. **Presentation** — [src/App.tsx](src/App.tsx), [src/components/](src/components/),
    [src/index.css](src/index.css). Components read state via `useBudget()` or receive it as props;
    they never touch `localStorage` or recompute budget math themselves.
