@@ -36,7 +36,9 @@ Three layers, deliberately separated:
 1. **Pure logic** — [src/lib/](src/lib/) + [types.ts](src/types.ts) + [constants.ts](src/constants.ts).
    No React, no DOM (except `storage.ts` touching `localStorage`). `calculations.ts` (budget math),
    `category.ts` / `expense.ts` (domain rules pulled out of components), `date.ts`, `format.ts` are
-   pure functions, and this is the only layer with tests. **Logic a component needs but React does
+   pure functions, and this is the only layer with tests. Domain input types (`NewExpenseInput`,
+   `NewCategoryInput`) live in `types.ts`, **not** in the context file — components import types from
+   here and only `useBudget`/`BudgetProvider` from layer 2. **Logic a component needs but React does
    not belongs here, not in the component** — e.g. `categoryDefaultDiff`, `resolveInitialCategoryId`,
    `buildNewCategoryInput`, `buildCategoryNameLookup`, `sortExpensesByRecency`. DOM-touching helpers
    (Blob download, viewport measuring) are the exception and stay next to the component.
@@ -139,6 +141,8 @@ reload. Storage keys are versioned (`budget-balance:data:v1`, `budget-balance:pr
   in/out은 **숫자**다: `value: number | undefined`, `onChange(value: number | undefined)`이고
   **빈 칸이 `undefined`** 다. 빈 칸과 0을 구분해야 하는 검증(예: 항목 추가 폼의 "예산 미입력")이
   여기에 걸려 있으니 `?? 0`으로 뭉개지 말 것.
+- 결제수단은 [constants.ts](src/constants.ts)의 `PAYMENT_METHODS` 하나로 정의한다 —
+  `SegmentedControl` 항목도 하드코딩하지 않고 여기서 `map`하며, 표시 이름은 `paymentMethodLabel`.
 - 설정 화면의 항목 편집 필드([CategoryEditRow.tsx](src/components/CategoryEditRow.tsx))는 로컬 state
   없이 `onChange`마다 `updateCategory`를 직접 호출한다(=키 입력마다 저장·재계산). 필드를 비우면
   그 자리에서 예산이 0이 된다.

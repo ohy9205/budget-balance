@@ -9,8 +9,8 @@ import {
 } from "@toss/tds-mobile";
 import { TDSMobileAITProvider } from "@toss/tds-mobile-ait";
 import { adaptive } from "@toss/tds-colors";
-import type { Expense } from "./types";
-import { BudgetProvider, useBudget, type NewExpenseInput } from "./context/BudgetContext";
+import type { Expense, NewExpenseInput } from "./types";
+import { BudgetProvider, useBudget } from "./context/BudgetContext";
 import { allCategoryStats } from "./lib/calculations";
 import { getDateKey, getMonthKey, isCurrentMonth } from "./lib/date";
 import { MonthSelector } from "./components/MonthSelector";

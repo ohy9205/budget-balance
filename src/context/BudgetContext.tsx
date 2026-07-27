@@ -5,7 +5,7 @@ import type {
   Expense,
   MonthlyBudgetData,
   NewCategoryInput,
-  PaymentMethod,
+  NewExpenseInput,
   Prefs,
 } from "../types";
 import { findCategorySeed } from "../constants";
@@ -20,14 +20,6 @@ import {
   savePrefs,
   saveStore,
 } from "../lib/storage";
-
-export interface NewExpenseInput {
-  categoryId: string;
-  amount: number;
-  paymentMethod: PaymentMethod;
-  date: string;
-  memo?: string;
-}
 
 export interface BudgetContextValue {
   currentMonth: string;

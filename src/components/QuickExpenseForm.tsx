@@ -1,7 +1,6 @@
 import { useRef, useState } from "react";
 import { BottomSheet, Button, Chip, ChipItem, SegmentedControl } from "@toss/tds-mobile";
-import type { BudgetCategory, Expense, PaymentMethod } from "../types";
-import type { NewExpenseInput } from "../context/BudgetContext";
+import type { BudgetCategory, Expense, NewExpenseInput, PaymentMethod } from "../types";
 import { PAYMENT_METHODS } from "../constants";
 import { sortByOrder } from "../lib/calculations";
 import { resolveInitialCategoryId } from "../lib/category";

@@ -42,6 +42,16 @@ export interface BudgetStore {
   months: Record<string, MonthlyBudgetData>;
 }
 
+/** 지출 추가·수정 입력값 (금액은 정수 원 단위) */
+export interface NewExpenseInput {
+  categoryId: string;
+  amount: number;
+  paymentMethod: PaymentMethod;
+  /** "YYYY-MM-DD" */
+  date: string;
+  memo?: string;
+}
+
 /** 항목 추가 입력값 (금액은 정수 원 단위) */
 export interface NewCategoryInput {
   name: string;
