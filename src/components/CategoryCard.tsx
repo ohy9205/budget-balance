@@ -106,18 +106,19 @@ export function CategoryCard({
       />
 
       {menu !== "closed" && (
-        // Menu.Trigger는 자체 dim이 드래그 중 포인터를 가로채므로 표면만 쓴다
-        <Menu.Dropdown
-          className={menu === "preview" ? "cat-menu cat-menu--preview" : "cat-menu"}
-          aria-label={`${category.name} 항목 메뉴`}
-        >
-          <Menu.DropdownItem onClick={onRequestEdit}>수정</Menu.DropdownItem>
-          <Menu.DropdownItem onClick={onRequestDelete}>
-            <Paragraph typography="t5" fontWeight="medium" color={adaptive.red500}>
-              <Paragraph.Text>삭제</Paragraph.Text>
-            </Paragraph>
-          </Menu.DropdownItem>
-        </Menu.Dropdown>
+        // 위치는 래퍼가 잡는다 — Menu.Dropdown 자신이 position: relative라
+        // 같은 요소에 absolute를 주면 emotion 스타일에 밀린다.
+        // Menu.Trigger는 자체 dim이 드래그 중 포인터를 가로채므로 표면만 쓴다.
+        <div className={menu === "preview" ? "cat-menu cat-menu--preview" : "cat-menu"}>
+          <Menu.Dropdown aria-label={`${category.name} 항목 메뉴`}>
+            <Menu.DropdownItem onClick={onRequestEdit}>수정</Menu.DropdownItem>
+            <Menu.DropdownItem onClick={onRequestDelete}>
+              <Paragraph typography="t5" fontWeight="medium" color={adaptive.red500}>
+                <Paragraph.Text>삭제</Paragraph.Text>
+              </Paragraph>
+            </Menu.DropdownItem>
+          </Menu.Dropdown>
+        </div>
       )}
     </div>
   );

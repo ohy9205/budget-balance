@@ -38,7 +38,7 @@ body {
 
 .app-main {
   /* 상단: fixed TopNavigation 높이 / 하단: FixedBottomCTA 높이 */
-  padding: 64px 0 112px;
+  padding: 58px 0 112px;
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -144,11 +144,11 @@ body {
   -webkit-touch-callout: none;
 }
 
-/* .section-card에 overflow가 없어 카드 밖으로 넘쳐도 잘리지 않는다 */
+/* 카드 오른쪽 위에 붙인다. 우측 여백 16px은 ListRow의 horizontalPadding과 맞춘 값이다. */
 .cat-menu {
   position: absolute;
-  top: calc(100% - 4px);
-  left: 16px;
+  top: -16px;
+  right: 8px;
 }
 
 .cat-menu--preview {
