@@ -89,18 +89,19 @@ There is no lint script and no ESLint config (the lone `eslint-disable` comment 
 [BudgetContext.tsx](src/context/BudgetContext.tsx) is vestigial). `npm run build` — tsc with
 `strict`, `noUnusedLocals`, `noUnusedParameters` — is the only static check.
 
-The suite is six files under [src/lib/](src/lib/) (136 tests) running with `environment: "node"`:
+The suite is six files under [src/lib/](src/lib/) (148 tests) running with `environment: "node"`:
 [calculations.test.ts](src/lib/calculations.test.ts) (also covers `format.ts` / `date.ts`),
 [category.test.ts](src/lib/category.test.ts), [expense.test.ts](src/lib/expense.test.ts),
 [month.test.ts](src/lib/month.test.ts), [onboarding.test.ts](src/lib/onboarding.test.ts),
-[storage.test.ts](src/lib/storage.test.ts) (`sanitizeMonth`
-only — `loadStore`/`saveStore` need a `localStorage` the node environment doesn't have). There is no
+[storage.test.ts](src/lib/storage.test.ts) (`sanitizeMonth` + 가짜 `KeyValueStore`를 주입한
+load/save 왕복). There is no
 jsdom, Testing Library, or setup file, so adding a component test means adding that config first.
 
 ## Architecture
 
-Personal single-user monthly budget app. No server, no DB, no auth — everything lives in
-`localStorage`. React 18 + Vite + TypeScript, state via a single Context (no state library).
+Personal single-user monthly budget app. No server, no DB, no auth — 저장은 앱인토스 미니앱의
+`Storage`(기기 로컬)이고, 토스 앱 밖에서는 `localStorage`로 떨어진다. React 18 + Vite +
+TypeScript, state via a single Context (no state library).
 
 Three layers, deliberately separated:
 
@@ -179,7 +180,20 @@ Three layers, deliberately separated:
 `loadStore` never throws on bad data: unknown values are normalized field by
 field and unusable records are dropped, falling back to an empty store. Any new persisted field
 needs a matching sanitizer in [storage.ts](src/lib/storage.ts), otherwise it silently disappears on
-reload. Storage keys are versioned (`budget-balance:data:v2`, `budget-balance:prefs:v1`) with
+reload.
+
+**저장 백엔드는 [keyValueStore.ts](src/storage/keyValueStore.ts) 어댑터 하나가 고른다** — 토스 앱
+안이면 `Storage`, 밖이면 `localStorage`다. 판별은 실제 호출을 한 번 해 보고 실패하면 폴백하는
+방식이며, 고른 결과는 모듈에 캐시된다. **`window`가 없으면(노드) 네이티브 브리지가 스텁으로
+바뀌어 호출이 영영 끝나지 않으므로**, 그 경우는 호출하기 전에 폴백한다 — 이 가드를 지우면
+테스트 스위트가 매달린다(`storage.test.ts`의 "어댑터를 주입하지 않아도 매달리지 않는다"가
+타임아웃으로 잡는다). `Storage.clearItems()`는 다른 기능의 저장분까지 지우므로 쓰지 않는다.
+
+`loadStore`/`saveStore`/`loadPrefs`/`savePrefs`는 **비동기**이고, 테스트를 위해 `KeyValueStore`를
+인자로 받는다(기본값은 어댑터가 고른 것) — `nextId`·`today`와 같은 주입 패턴이다.
+**`BudgetProvider`는 읽기가 끝나기 전에 `null`을 렌더링하고 저장도 하지 않는다.** 둘 다
+필수다 — 로드 전에 저장하면 빈 값이 기존 데이터를 덮고, 로드 전에 렌더하면 데이터가 있는데도
+"예산 없음" 화면이 스친다. Storage keys are versioned (`budget-balance:data:v2`, `budget-balance:prefs:v1`) with
 `STORE_VERSION = 2`; a breaking shape change means a new key + migration, not a silent reinterpret.
 v1은 `monthlyBudget`/`targetExpenseAmount`/`date`/`paymentMethod` 시절 키다 — 마이그레이션하지
 않고 버린다.

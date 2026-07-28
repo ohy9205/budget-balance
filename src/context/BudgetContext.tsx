@@ -50,28 +50,43 @@ export interface BudgetContextValue {
 const BudgetContext = createContext<BudgetContextValue | null>(null);
 
 export function BudgetProvider({ children }: { children: ReactNode }) {
-  const [store, setStore] = useState<BudgetStore>(() => loadStore());
-  const [prefs, setPrefs] = useState<Prefs>(() => loadPrefs());
+  // 저장소 읽기가 끝나기 전에는 null이다
+  const [store, setStore] = useState<BudgetStore | null>(null);
+  const [prefs, setPrefs] = useState<Prefs | null>(null);
   const [currentMonth, setCurrentMonth] = useState<string>(() => getMonthKey());
 
-  // store / prefs 변경 시 localStorage에 영속화
   useEffect(() => {
-    saveStore(store);
+    let cancelled = false;
+    void (async () => {
+      const [loadedStore, loadedPrefs] = await Promise.all([loadStore(), loadPrefs()]);
+      if (cancelled) return;
+      setStore(loadedStore);
+      setPrefs(loadedPrefs);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // 읽기 전에 저장하면 빈 값이 기존 데이터를 덮어쓴다
+  useEffect(() => {
+    if (store === null) return;
+    void saveStore(store);
   }, [store]);
   useEffect(() => {
-    savePrefs(prefs);
+    if (prefs === null) return;
+    void savePrefs(prefs);
   }, [prefs]);
 
-  const monthData = store.months[currentMonth] ?? null;
-
   const previousMonthWithData = useMemo(
-    () => findPreviousMonthWithData(store.months, currentMonth),
-    [store.months, currentMonth],
+    () => (store ? findPreviousMonthWithData(store.months, currentMonth) : null),
+    [store, currentMonth],
   );
 
   /** 현재 월 데이터를 갱신하는 헬퍼 (없으면 무시) */
   function mutateMonth(fn: (data: MonthlyBudgetData) => MonthlyBudgetData) {
     setStore((prev) => {
+      if (!prev) return prev;
       const existing = prev.months[currentMonth];
       if (!existing) return prev;
       return { ...prev, months: { ...prev.months, [currentMonth]: fn(existing) } };
@@ -88,7 +103,7 @@ export function BudgetProvider({ children }: { children: ReactNode }) {
 
   function createEmptyMonthFromSeed() {
     setStore((prev) => {
-      if (prev.months[currentMonth]) return prev;
+      if (!prev || prev.months[currentMonth]) return prev;
       return {
         ...prev,
         months: { ...prev.months, [currentMonth]: createSeededMonth(currentMonth) },
@@ -98,7 +113,7 @@ export function BudgetProvider({ children }: { children: ReactNode }) {
 
   function copyFromPreviousMonth() {
     setStore((prev) => {
-      if (prev.months[currentMonth]) return prev;
+      if (!prev || prev.months[currentMonth]) return prev;
       const source = findPreviousMonthWithData(prev.months, currentMonth);
       if (!source) return prev;
       return {
@@ -114,7 +129,7 @@ export function BudgetProvider({ children }: { children: ReactNode }) {
   function addExpense(input: NewExpenseInput) {
     const expense = createExpense(input, newId(), new Date().toISOString());
     mutateMonth((data) => ({ ...data, expenses: [...data.expenses, expense] }));
-    setPrefs((p) => ({ ...p, lastCategoryId: input.categoryId }));
+    setPrefs((p) => (p ? { ...p, lastCategoryId: input.categoryId } : p));
   }
 
   function updateExpense(id: string, input: NewExpenseInput) {
@@ -160,8 +175,14 @@ export function BudgetProvider({ children }: { children: ReactNode }) {
   }
 
   function resetCurrentMonth() {
-    setStore((prev) => ({ ...prev, months: removeMonth(prev.months, currentMonth) }));
+    setStore((prev) => (prev ? { ...prev, months: removeMonth(prev.months, currentMonth) } : prev));
   }
+
+  // 읽기가 끝나기 전에는 아무것도 그리지 않는다 —
+  // 데이터가 있는데 "예산 없음" 화면을 잠깐 보여 주는 사고를 막는다
+  if (store === null || prefs === null) return null;
+
+  const monthData = store.months[currentMonth] ?? null;
 
   const value: BudgetContextValue = {
     currentMonth,

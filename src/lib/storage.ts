@@ -6,6 +6,7 @@ import {
   STORAGE_KEY,
   STORE_VERSION,
 } from "../constants";
+import { resolveKeyValueStore, type KeyValueStore } from "../storage/keyValueStore";
 import { isValidMonthKey } from "./date";
 import { newId } from "./id";
 
@@ -81,10 +82,11 @@ export function sanitizeMonth(raw: unknown, monthKey?: string): MonthlyBudgetDat
 }
 
 /** 전체 저장소를 방어적으로 파싱. 손상/부재 시 빈 저장소 반환. */
-export function loadStore(): BudgetStore {
+export async function loadStore(kv?: KeyValueStore): Promise<BudgetStore> {
   const empty: BudgetStore = { version: STORE_VERSION, months: {} };
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const store = kv ?? (await resolveKeyValueStore());
+    const raw = await store.getItem(STORAGE_KEY);
     if (!raw) return empty;
     const parsed = JSON.parse(raw) as unknown;
     if (typeof parsed !== "object" || parsed === null) return empty;
@@ -102,17 +104,19 @@ export function loadStore(): BudgetStore {
   }
 }
 
-export function saveStore(store: BudgetStore): void {
+export async function saveStore(store: BudgetStore, kv?: KeyValueStore): Promise<void> {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
+    const target = kv ?? (await resolveKeyValueStore());
+    await target.setItem(STORAGE_KEY, JSON.stringify(store));
   } catch (err) {
     console.warn("예산 데이터를 저장하지 못했습니다.", err);
   }
 }
 
-export function loadPrefs(): Prefs {
+export async function loadPrefs(kv?: KeyValueStore): Promise<Prefs> {
   try {
-    const raw = localStorage.getItem(PREFS_KEY);
+    const store = kv ?? (await resolveKeyValueStore());
+    const raw = await store.getItem(PREFS_KEY);
     if (!raw) return {};
     const parsed = JSON.parse(raw) as Record<string, unknown>;
     return {
@@ -123,9 +127,10 @@ export function loadPrefs(): Prefs {
   }
 }
 
-export function savePrefs(prefs: Prefs): void {
+export async function savePrefs(prefs: Prefs, kv?: KeyValueStore): Promise<void> {
   try {
-    localStorage.setItem(PREFS_KEY, JSON.stringify(prefs));
+    const target = kv ?? (await resolveKeyValueStore());
+    await target.setItem(PREFS_KEY, JSON.stringify(prefs));
   } catch (err) {
     console.warn("설정을 저장하지 못했습니다.", err);
   }
