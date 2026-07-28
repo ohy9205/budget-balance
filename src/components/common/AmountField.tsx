@@ -1,6 +1,6 @@
 import { forwardRef } from "react";
 import { TextField, type TextFieldProps } from "@toss/tds-mobile";
-import { formatThousands, toAmountDigits } from "../lib/format";
+import { formatThousands, toAmountDigits } from "../../lib/format";
 
 export interface AmountFieldProps
   extends Omit<TextFieldProps, "value" | "onChange" | "type" | "inputMode"> {

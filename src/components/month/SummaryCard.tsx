@@ -1,11 +1,11 @@
 import type { CSSProperties } from "react";
 import { Paragraph, ProgressBar } from "@toss/tds-mobile";
 import { adaptive } from "@toss/tds-colors";
-import type { MonthlyBudgetData } from "../types";
-import { monthlySummary, statusFromUsageRate } from "../lib/calculations";
-import { formatCurrency, formatPercent } from "../lib/format";
-import { StatusBadge } from "./StatusBadge";
-import { STATUS_COLOR, toProgress } from "./statusTheme";
+import type { MonthlyBudgetData } from "../../types";
+import { monthlySummary, statusFromUsageRate } from "../../lib/calculations";
+import { formatCurrency, formatPercent } from "../../lib/format";
+import { StatusBadge } from "../common/StatusBadge";
+import { STATUS_COLOR, toProgress } from "../common/statusTheme";
 
 export function SummaryCard({ data }: { data: MonthlyBudgetData }) {
   const summary = monthlySummary(data);

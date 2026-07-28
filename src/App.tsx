@@ -13,13 +13,13 @@ import type { Expense, NewExpenseInput } from "./types";
 import { BudgetProvider, useBudget } from "./context/BudgetContext";
 import { allCategoryStats } from "./lib/calculations";
 import { getDateKey, getMonthKey, isCurrentMonth } from "./lib/date";
-import { MonthSelector } from "./components/MonthSelector";
-import { SummaryCard } from "./components/SummaryCard";
-import { CategoryList } from "./components/CategoryList";
-import { QuickExpenseForm } from "./components/QuickExpenseForm";
-import { RecentExpenses } from "./components/RecentExpenses";
+import { MonthSelector } from "./components/month/MonthSelector";
+import { SummaryCard } from "./components/month/SummaryCard";
+import { CategoryList } from "./components/category/CategoryList";
+import { QuickExpenseForm } from "./components/expense/QuickExpenseForm";
+import { RecentExpenses } from "./components/expense/RecentExpenses";
 import { SettingsModal } from "./components/SettingsModal";
-import { ConfirmDialog } from "./components/ConfirmDialog";
+import { ConfirmDialog } from "./components/common/ConfirmDialog";
 
 type ExpenseModalState =
   | { mode: "closed" }

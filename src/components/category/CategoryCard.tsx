@@ -1,10 +1,10 @@
 import { useSortable } from "@dnd-kit/react/sortable";
 import { Border, ListRow, Menu, Paragraph, ProgressBar } from "@toss/tds-mobile";
 import { adaptive } from "@toss/tds-colors";
-import type { CategoryStats } from "../lib/calculations";
-import { formatCurrency, formatPercent, formatThousands } from "../lib/format";
-import { StatusBadge } from "./StatusBadge";
-import { STATUS_COLOR, toProgress } from "./statusTheme";
+import type { CategoryStats } from "../../lib/calculations";
+import { formatCurrency, formatPercent, formatThousands } from "../../lib/format";
+import { StatusBadge } from "../common/StatusBadge";
+import { STATUS_COLOR, toProgress } from "../common/statusTheme";
 
 /** `preview`는 아직 누르고 있는 단계 — 이어서 끌 수 있어야 해 포인터를 받지 않는다. */
 export type CardMenuState = "closed" | "preview" | "open";

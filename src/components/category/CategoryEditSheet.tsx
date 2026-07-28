@@ -1,11 +1,11 @@
 import { useRef, useState } from "react";
 import { BottomSheet, TextField } from "@toss/tds-mobile";
-import type { BudgetCategory, CategoryPatch } from "../types";
-import { buildCategoryEditPatch } from "../lib/category";
-import { useAutoFocus } from "../hooks/useAutoFocus";
-import { useDeferredClose } from "../hooks/useDeferredClose";
-import { useSheetMaxHeight } from "../hooks/useSheetMaxHeight";
-import { AmountField } from "./AmountField";
+import type { BudgetCategory, CategoryPatch } from "../../types";
+import { buildCategoryEditPatch } from "../../lib/category";
+import { useAutoFocus } from "../../hooks/useAutoFocus";
+import { useDeferredClose } from "../../hooks/useDeferredClose";
+import { useSheetMaxHeight } from "../../hooks/useSheetMaxHeight";
+import { AmountField } from "../common/AmountField";
 
 interface CategoryEditSheetProps {
   category: BudgetCategory;

@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { ListHeader, ListRow, Paragraph, TextButton } from "@toss/tds-mobile";
 import { adaptive } from "@toss/tds-colors";
-import type { BudgetCategory, Expense } from "../types";
-import { buildCategoryNameLookup } from "../lib/category";
-import { sortExpensesByRecency } from "../lib/expense";
-import { formatCurrency, formatDateLabel } from "../lib/format";
+import type { BudgetCategory, Expense } from "../../types";
+import { buildCategoryNameLookup } from "../../lib/category";
+import { sortExpensesByRecency } from "../../lib/expense";
+import { formatCurrency, formatDateLabel } from "../../lib/format";
 
 interface RecentExpensesProps {
   expenses: Expense[];

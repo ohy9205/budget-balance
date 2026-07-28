@@ -1,11 +1,11 @@
 import { useRef, useState } from "react";
 import { BottomSheet, TextField } from "@toss/tds-mobile";
-import type { NewCategoryInput } from "../types";
-import { buildNewCategoryInput } from "../lib/category";
-import { useAutoFocus } from "../hooks/useAutoFocus";
-import { useDeferredClose } from "../hooks/useDeferredClose";
-import { useSheetMaxHeight } from "../hooks/useSheetMaxHeight";
-import { AmountField } from "./AmountField";
+import type { NewCategoryInput } from "../../types";
+import { buildNewCategoryInput } from "../../lib/category";
+import { useAutoFocus } from "../../hooks/useAutoFocus";
+import { useDeferredClose } from "../../hooks/useDeferredClose";
+import { useSheetMaxHeight } from "../../hooks/useSheetMaxHeight";
+import { AmountField } from "../common/AmountField";
 
 interface CategoryAddSheetProps {
   onSubmit: (input: NewCategoryInput) => void;

@@ -12,7 +12,7 @@ import { useBudget } from "../context/BudgetContext";
 import { formatMonthLabel } from "../lib/date";
 import { useBodyScrollLock } from "../hooks/useBodyScrollLock";
 import { useEscapeKey } from "../hooks/useEscapeKey";
-import { ConfirmDialog } from "./ConfirmDialog";
+import { ConfirmDialog } from "./common/ConfirmDialog";
 
 interface SettingsModalProps {
   onClose: () => void;

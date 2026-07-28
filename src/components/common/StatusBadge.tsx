@@ -1,5 +1,5 @@
 import { Badge, type BadgeProps } from "@toss/tds-mobile";
-import { STATUS_LABEL, type BudgetStatus } from "../lib/calculations";
+import { STATUS_LABEL, type BudgetStatus } from "../../lib/calculations";
 import { STATUS_BADGE } from "./statusTheme";
 
 interface StatusBadgeProps {

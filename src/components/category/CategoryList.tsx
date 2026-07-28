@@ -4,13 +4,13 @@ import { isSortable } from "@dnd-kit/react/sortable";
 import { PointerActivationConstraints } from "@dnd-kit/dom";
 import { RestrictToElement } from "@dnd-kit/dom/modifiers";
 import { Button, useHaptic } from "@toss/tds-mobile";
-import type { BudgetCategory } from "../types";
-import type { CategoryStats } from "../lib/calculations";
-import { useBudget } from "../context/BudgetContext";
+import type { BudgetCategory } from "../../types";
+import type { CategoryStats } from "../../lib/calculations";
+import { useBudget } from "../../context/BudgetContext";
 import { CategoryAddSheet } from "./CategoryAddSheet";
 import { CategoryCard, type CardMenuState } from "./CategoryCard";
 import { CategoryEditSheet } from "./CategoryEditSheet";
-import { ConfirmDialog } from "./ConfirmDialog";
+import { ConfirmDialog } from "../common/ConfirmDialog";
 
 /** 롱프레스 판정 시간(ms) */
 const LONG_PRESS_MS = 500;

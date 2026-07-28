@@ -1,5 +1,5 @@
 import { adaptive } from "@toss/tds-colors";
-import type { BudgetStatus } from "../lib/calculations";
+import type { BudgetStatus } from "../../lib/calculations";
 
 /**
  * 예산 상태 → TDS 색·뱃지 매핑.

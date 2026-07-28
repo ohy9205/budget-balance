@@ -1,7 +1,7 @@
 import { Paragraph, TopNavigationIconButton } from "@toss/tds-mobile";
 import { adaptive } from "@toss/tds-colors";
-import { useBudget } from "../context/BudgetContext";
-import { formatMonthLabel } from "../lib/date";
+import { useBudget } from "../../context/BudgetContext";
+import { formatMonthLabel } from "../../lib/date";
 
 /** 상단 내비게이션 가운데의 월 이동 컨트롤 */
 export function MonthSelector() {
