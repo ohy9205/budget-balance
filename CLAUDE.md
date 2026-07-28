@@ -89,7 +89,7 @@ There is no lint script and no ESLint config (the lone `eslint-disable` comment 
 [BudgetContext.tsx](src/context/BudgetContext.tsx) is vestigial). `npm run build` — tsc with
 `strict`, `noUnusedLocals`, `noUnusedParameters` — is the only static check.
 
-The suite is six files under [src/lib/](src/lib/) (148 tests) running with `environment: "node"`:
+The suite is six files under [src/lib/](src/lib/) (150 tests) running with `environment: "node"`:
 [calculations.test.ts](src/lib/calculations.test.ts) (also covers `format.ts` / `date.ts`),
 [category.test.ts](src/lib/category.test.ts), [expense.test.ts](src/lib/expense.test.ts),
 [month.test.ts](src/lib/month.test.ts), [onboarding.test.ts](src/lib/onboarding.test.ts),
@@ -110,7 +110,7 @@ Three layers, deliberately separated:
    `category.ts` / `expense.ts` / `month.ts` (domain rules and state transitions), `date.ts`,
    `format.ts`, `id.ts` are pure functions, and this is the only layer with tests. **`month.ts` owns
    month *values*** (`createSeededMonth`, `copyBudgetFrom`, `findPreviousMonthWithData`,
-   `removeMonth`) and **`storage.ts` owns only persistence** (sanitizers + load/save) — keep that
+   `hasAnyMonthData`, `removeMonth`) and **`storage.ts` owns only persistence** (sanitizers + load/save) — keep that
    split; building a month is not a storage concern. `id.ts`'s `newId()` is the one exception to
    purity (random), so functions that need ids take them as arguments — either a single
    `id`/`createdAt` (`createExpense`, `createCategory`) or an injectable `nextId: () => string`
@@ -138,14 +138,19 @@ Three layers, deliberately separated:
    ever shows a real cost, fix it with `useMemo` on `value` + `React.memo` on the hot consumer, not
    with scattered `useCallback`. (`previousMonthWithData` keeps its `useMemo` — it walks
    `store.months`.)
-3. **Presentation** — [src/App.tsx](src/App.tsx), [src/components/](src/components/),
+3. **Presentation** — [src/pages/](src/pages/), [src/components/](src/components/),
    [src/hooks/](src/hooks/), [src/index.css](src/index.css). Components read state via `useBudget()`
    or receive it as props; they never touch `localStorage` or recompute budget math themselves.
    A component is JSX plus local form state — anything else is factored out: pure logic to layer 1,
    and each state/effect/DOM concern to its own **single-responsibility hook** in
-   [src/hooks/](src/hooks/) (`useEscapeKey`, `useBodyScrollLock`, `useDeferredClose`,
-   `useSheetMaxHeight`, `useAutoFocus`). Don't merge those into one per-component "behavior" hook —
-   they are independent concerns and get reused separately.
+   [src/hooks/](src/hooks/) (`useDeferredClose`, `useSheetMaxHeight`, `useAutoFocus`). Don't merge
+   those into one per-component "behavior" hook — they are independent concerns and get reused
+   separately.
+
+   [main.tsx](src/main.tsx)가 프로바이더 조립(`TDSMobileAITProvider` → `BudgetProvider` →
+   `HashRouter`)이고 [App.tsx](src/App.tsx)는 라우트 정의뿐이다. 화면은 `pages/`, 재사용 조각은
+   `components/`의 도메인 폴더(`common` / `month` / `category` / `expense`)에 둔다 —
+   `common/`은 도메인을 모르는 것만 담는다. 폴더는 응집만을 위한 것이고 3계층 규칙이 우선이다.
 
 **UI work rewrites only the presentation layer; layers 1–2 are reused as-is.** Keep that split.
 
@@ -219,7 +224,7 @@ v1은 `monthlyBudget`/`targetExpenseAmount`/`date`/`paymentMethod` 시절 키다
 - **UI는 토스 [TDS Mobile](https://tossmini-docs.toss.im/tds-mobile/)(`@toss/tds-mobile`)로 만든다.**
   새 UI를 만들 때는 먼저 `@toss/tds-mobile`에 해당 컴포넌트가 있는지 보고, 없을 때만 직접 만든다.
   타입 정의(`node_modules/@toss/tds-mobile/dist/esm/index.d.ts`)가 사실상의 API 문서다.
-- [App.tsx](src/App.tsx)의 최상단이 `TDSMobileAITProvider`(`@toss/tds-mobile-ait`)다. 이게
+- [main.tsx](src/main.tsx)의 최상단이 `TDSMobileAITProvider`(`@toss/tds-mobile-ait`)다. 이게
   `:root`에 `--adaptive*` 색 변수와 타이포 변수를 주입하므로 **provider 밖에서는 TDS 컴포넌트가
   깨진다.** 토스 앱 밖(일반 브라우저)에서는 `@apps-in-toss/web-framework` 호출이 실패하지만
   provider가 try/catch로 감싸 기본값(blue500, safe-area 0)으로 떨어지므로 그대로 동작한다.
@@ -287,18 +292,9 @@ v1은 `monthlyBudget`/`targetExpenseAmount`/`date`/`paymentMethod` 시절 키다
 - 항목 메뉴는 TDS `Menu.Dropdown`을 **`Menu.Trigger` 없이 단독으로** 쓴다(단독 렌더 확인함).
   `Menu.Trigger`의 dim이 드래그 중 포인터를 가로채기 때문이며, 열림 상태와 위치는 직접 관리한다.
   `Menu.DropdownItem`은 `role="menuitem"`·`tabindex`를 스스로 넣으므로 덧붙이지 않는다.
-- **예외는 설정 화면 하나뿐이다.** TDS `Modal`은 고정폭 카드라 전체 화면 페이지에 맞지 않아
-  [SettingsModal.tsx](src/components/SettingsModal.tsx)는 `.settings-panel`(`position: fixed`)을
-  직접 그린다(현재 코드에 TDS `Modal` 사용처는 없다). 이 파일이 하는 일은 셸(포털·상단바·스크롤
-  잠금·Esc)과 "이번 달 데이터 초기화" 확인 하나뿐이다 — 항목 관련 UI는 여기 두지 않는다.
-  여기 엮여 있는 제약 세 가지:
-  - `.app-shell`의 `transform`이 containing block이라 그 안에서는 `fixed`가 460px 컬럼에 갇힌다.
-    그래서 `createPortal(..., document.body)`로 셸 밖에 붙인다 — 포털을 빼면 화면을 덮지 못한다.
-  - `.settings-panel`의 `z-index: 9999`는 TDS 오버레이보다 **낮게** 둔 값이다. 확인 다이얼로그가
-    설정 패널 위에 떠야 하므로 올리지 말 것.
-  - 포커스 트랩·스크롤 잠금·Esc 닫기를 TDS가 안 해 주므로 직접 처리한다 —
-    [useBodyScrollLock](src/hooks/useBodyScrollLock.ts) / [useEscapeKey](src/hooks/useEscapeKey.ts).
-    확인 다이얼로그가 떠 있으면 `useEscapeKey(onClose, confirm === null)`로 Esc를 그쪽에 양보한다.
+- 설정은 오버레이가 아니라 라우트다([SettingsPage.tsx](src/pages/SettingsPage.tsx), `/settings`).
+  하는 일은 상단바와 "이번 달 데이터 초기화" 확인 하나뿐이다 — 항목 관련 UI는 여기 두지 않는다.
+  카드 없는 단색 화면이라 `.settings-page`가 셸의 회색 바닥을 흰색으로 덮는다.
 - `BottomSheet`는 닫힘 애니메이션 후 `onExited`가 불리므로, 시트를 닫고 이어서 할 일
   (예: 삭제 확인 다이얼로그 열기)은 `onExited` 뒤로 미룬다 —
   [useDeferredClose](src/hooks/useDeferredClose.ts)의 `runAfterClose`가 그 흐름이다.

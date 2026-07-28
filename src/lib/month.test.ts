@@ -5,6 +5,7 @@ import {
   copyBudgetFrom,
   createSeededMonth,
   findPreviousMonthWithData,
+  hasAnyMonthData,
   removeMonth,
 } from "./month";
 
@@ -38,6 +39,16 @@ describe("findPreviousMonthWithData", () => {
 
   it("빈 저장소면 null", () => {
     expect(findPreviousMonthWithData({}, "2026-07")).toBeNull();
+  });
+});
+
+describe("hasAnyMonthData", () => {
+  it("월이 하나도 없으면 false", () => {
+    expect(hasAnyMonthData({})).toBe(false);
+  });
+
+  it("월이 하나라도 있으면 true", () => {
+    expect(hasAnyMonthData(store("2026-07"))).toBe(true);
   });
 });
 

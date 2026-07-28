@@ -69,8 +69,8 @@ budget-balance/
 ├─ vite.config.ts / tsconfig*.json / package.json
 ├─ CLAUDE.md                       # 코드 작업 시 지켜야 할 규칙·제약 (상세)
 └─ src/
-   ├─ main.tsx                     # 진입점
-   ├─ App.tsx                      # TDS provider + 대시보드 조립, 시트/설정 열림 상태
+   ├─ main.tsx                     # 진입점 — TDS provider + BudgetProvider + HashRouter
+   ├─ App.tsx                      # 라우트 정의 + 진입 게이트
    ├─ types.ts                     # 도메인 타입 + 입력 타입
    ├─ constants.ts                 # 기본 예산 항목 7개, 결제수단, 상태 임계값, 저장 키
    ├─ index.css                    # 레이아웃 전용 (460px 컬럼, 간격, 흰 카드 면) — 색·타이포는 TDS
@@ -87,25 +87,18 @@ budget-balance/
    │  ├─ id.ts                     # id 발급 (유일한 비순수 함수)
    │  └─ *.test.ts                 # 5개 파일, 116개 테스트
    ├─ hooks/                       # 관심사 하나씩 담은 작은 훅
-   │  ├─ useEscapeKey.ts           # Esc 닫기
-   │  ├─ useBodyScrollLock.ts      # 오버레이 중 배경 스크롤 잠금
    │  ├─ useDeferredClose.ts       # 닫힘 애니메이션 후 후처리
    │  ├─ useSheetMaxHeight.ts      # 키보드가 뜰 때 시트 높이 자르기
    │  └─ useAutoFocus.ts           # 마운트 후 입력 포커스
-   └─ components/
-      ├─ MonthSelector.tsx         # 연/월 표시, 이전·다음 달
-      ├─ SummaryCard.tsx           # 이번 달 요약
-      ├─ CategoryList.tsx          # 항목 목록 + 드래그 정렬·롱프레스 메뉴 조율
-      ├─ CategoryCard.tsx          # 항목별 카드 (정렬 대상 + 롱프레스 메뉴)
-      ├─ CategoryEditSheet.tsx     # 항목 편집 하단 시트 (저장을 눌러야 반영)
-      ├─ CategoryAddSheet.tsx      # 항목 추가 하단 시트
-      ├─ QuickExpenseForm.tsx      # 지출 추가·수정 하단 시트
-      ├─ RecentExpenses.tsx        # 최근 지출 목록
-      ├─ SettingsModal.tsx         # 설정 전체 화면 (셸 + 데이터 초기화)
-      ├─ AmountField.tsx           # 금액 입력 공통 (천단위 표시 ↔ 숫자)
-      ├─ StatusBadge.tsx           # 상태 뱃지
-      ├─ statusTheme.ts            # 상태 → TDS 색·뱃지 매핑
-      └─ ConfirmDialog.tsx         # 파괴적 동작 확인
+   ├─ pages/                       # 라우트가 가리키는 화면
+   │  ├─ HomePage.tsx              # 홈 — 월 요약 + 항목 목록 + 지출 시트 조율
+   │  ├─ SettingsPage.tsx          # 설정 — 이번 달 데이터 초기화
+   │  └─ onboarding/               # 최초 설정
+   └─ components/                  # 도메인별 재사용 조각
+      ├─ common/                   # AmountField · StatusBadge · statusTheme · ConfirmDialog
+      ├─ month/                    # MonthSelector · SummaryCard
+      ├─ category/                 # CategoryList · CategoryCard · CategoryAddSheet · CategoryEditSheet
+      └─ expense/                  # QuickExpenseForm · RecentExpenses
 ```
 
 ## 아키텍처
@@ -116,7 +109,7 @@ budget-balance/
    테스트가 있는 유일한 계층입니다.
 2. **상태** (`src/context/BudgetContext.tsx`) — 전체 저장소와 선택된 월, 최근 사용값을 갖고
    `localStorage`에 영속화합니다. 각 액션은 1계층의 순수 함수를 호출하는 얇은 래퍼입니다.
-3. **표현** (`src/App.tsx`, `src/components/`, `src/hooks/`, `src/index.css`) — 컴포넌트는
+3. **표현** (`src/pages/`, `src/components/`, `src/hooks/`, `src/index.css`) — 컴포넌트는
    JSX와 지역 폼 상태만 갖고, 계산·검증은 1계층에, 상태/이펙트/DOM 관심사는 훅으로 뺍니다.
 
 계층 경계와 지켜야 할 제약(금액 정수 규칙, 월 독립성, `seedKey` 동작, TDS 사용 규칙 등)은

@@ -268,22 +268,12 @@ body {
 }
 
 /* ── 설정 화면 ────────────────────────────────────────── */
-/* 전체 화면 페이지라 TDS Modal(고정폭 카드) 대신 직접 그린다.
-   z-index는 TDS 오버레이보다 낮게 둬서 확인 다이얼로그가 이 패널 위에 오게 한다. */
-.settings-panel {
-  position: fixed;
-  inset: 0;
-  z-index: 9999;
-  display: flex;
-  flex-direction: column;
+/* 카드가 없는 단색 화면이라 셸의 회색 바닥을 흰색으로 덮는다 */
+.settings-page {
   background: var(--adaptiveBackground);
 }
 
 .settings-body {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
   padding-bottom: 48px;
 }
 

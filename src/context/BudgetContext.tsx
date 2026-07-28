@@ -15,6 +15,7 @@ import {
   copyBudgetFrom,
   createSeededMonth,
   findPreviousMonthWithData,
+  hasAnyMonthData,
   removeMonth,
 } from "../lib/month";
 import { loadPrefs, loadStore, savePrefs, saveStore } from "../lib/storage";
@@ -25,6 +26,8 @@ export interface BudgetContextValue {
   monthData: MonthlyBudgetData | null;
   /** 데이터가 존재하는 이전 월 (지난달 복사 기능용). 없으면 null */
   previousMonthWithData: string | null;
+  /** 저장된 월이 하나라도 있는지 (진입 게이트 판단용) */
+  hasAnyMonthData: boolean;
   prefs: Prefs;
 
   goToPreviousMonth: () => void;
@@ -188,6 +191,7 @@ export function BudgetProvider({ children }: { children: ReactNode }) {
     currentMonth,
     monthData,
     previousMonthWithData,
+    hasAnyMonthData: hasAnyMonthData(store.months),
     prefs,
     goToPreviousMonth,
     goToNextMonth,

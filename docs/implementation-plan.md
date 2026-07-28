@@ -34,7 +34,7 @@
 | 포맷·날짜 | [format.ts](../src/lib/format.ts) / [date.ts](../src/lib/date.ts) |
 | 방어적 정규화 | [storage.ts](../src/lib/storage.ts)의 `sanitize*` — 저장 백엔드가 바뀌어도 그대로 쓴다 |
 | UI 컴포넌트 | `SummaryCard` `CategoryCard` `CategoryList` `AmountField` `StatusBadge` `MonthSelector` `ConfirmDialog` 등 |
-| 훅 | `useEscapeKey` `useBodyScrollLock` `useDeferredClose` `useSheetMaxHeight` `useAutoFocus` |
+| 훅 | `useDeferredClose` `useSheetMaxHeight` `useAutoFocus` (`useEscapeKey`·`useBodyScrollLock`은 3단계에서 사용처가 사라져 삭제) |
 | 테스트 | `src/lib/*.test.ts` 136개 |
 | 3계층 구조 | 순수 로직 / 상태 / 표현 분리 — 그대로 유지한다 |
 
@@ -85,7 +85,7 @@
 현재 라우터가 없고 [App.tsx](../src/App.tsx)가 단일 대시보드다. S7(항목 상세)과 온보딩 3단계가
 생기면서 라우터가 필요하다. **인증이 없어져도 이 판단은 그대로다.**
 
-- **`react-router-dom` v6 + `HashRouter`를 쓴다.** 앱인토스는 빌드 결과를
+- **`react-router-dom` v7 + `HashRouter`를 쓴다.** 앱인토스는 빌드 결과를
   `https://{appName}.apps.tossmini.com` 에 정적 호스팅한다. `BrowserRouter`는 서버의 SPA fallback
   설정에 의존하지만 `HashRouter`는 의존하지 않으므로 안전한 쪽을 택한다.
 
@@ -94,7 +94,7 @@
 /onboarding/categories→ S2
 /onboarding/budgets   → S3
 /onboarding/confirm   → S4
-/home?month=YYYY-MM   → S5 / S9  (month 없으면 이번 달)
+/home                 → S5 / S9  (보고 있는 월은 BudgetContext가 들고 있다)
 /category/:id         → S7
 /settings             → S10
 ```
@@ -330,10 +330,23 @@ src/
 - **완료 기준**: 토스 앱에서 지출 등록 → 앱 완전 종료 → 재실행 시 데이터가 남아 있다.
   데스크톱 브라우저(`npm run dev`)에서도 동작한다.
 
-### 3단계 — 라우터 도입
-- **먼저 `components/` 하위 폴더 이동을 별도 커밋으로 끝낸다**(§9.1). 이동 + import 경로만.
-- `HashRouter` + `pages/` 분리, 진입 게이트(저장된 월 0개 → 온보딩).
-- **검증 과제 V4(뒤로가기 제스처 × BottomSheet)를 여기서 확인한다.**
+### ~~3단계 — 라우터 도입~~ **완료** (`27ef370`, `HEAD`)
+`components/` 하위 폴더 이동(별도 커밋), `HashRouter` + `pages/` 분리, 진입 게이트
+(`hasAnyMonthData` → 온보딩 / 홈), 설정을 오버레이에서 `/settings` 라우트로 전환.
+
+세 가지가 계획과 다르다.
+
+- **`react-router-dom`은 v6가 아니라 v7이다.** 선언형 API(`HashRouter`/`Routes`/`Route`/
+  `Navigate`)는 같아서 쓰는 코드에 차이가 없다.
+- **`/home?month=YYYY-MM`의 쿼리 파라미터는 넣지 않았다.** `currentMonth`는 `BudgetContext`에
+  그대로 둔다 — `/settings`·`/category/:id`는 이 파라미터를 달지 않으므로 URL을 유일한 출처로
+  삼으면 그 화면들을 오갈 때마다 이번 달로 되돌아간다. **8단계(월별 기능)에서 다시 판단한다.**
+- **설정 화면이 페이지가 되면서 `useBodyScrollLock`·`useEscapeKey`가 고아가 되어 지웠다.**
+  나머지 오버레이(TDS `BottomSheet`/`ConfirmDialog`)는 스크롤 잠금·Esc를 스스로 처리한다.
+
+`/onboarding/categories`는 4단계 전까지 기본 시드로 시작하는 임시 화면이다.
+
+**V4는 미확인이다** — 실기기가 필요하고, 사용자 결정으로 실기기 테스트는 9단계에 모아서 한다.
 
 ### 4단계 — 최초 설정 화면 (G2)
 - `OnboardingContext`, S2~S4 3화면.

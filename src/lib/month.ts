@@ -25,6 +25,11 @@ export function findPreviousMonthWithData(
   return earlier.length > 0 ? earlier[earlier.length - 1] : null;
 }
 
+/** 저장된 월이 하나라도 있는지 — 최초 설정을 마쳤는지의 기준 */
+export function hasAnyMonthData(months: Record<string, MonthlyBudgetData>): boolean {
+  return Object.keys(months).length > 0;
+}
+
 /** 해당 월을 지운 새 저장소 맵 (원본은 그대로 둔다) */
 export function removeMonth(
   months: Record<string, MonthlyBudgetData>,
