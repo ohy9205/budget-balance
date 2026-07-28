@@ -404,7 +404,7 @@ jsdom·Testing Library 설정이 없다. 온보딩 검증 로직이 순수 함�
 | ~~V3~~ | ~~Edge Function의 Supabase JWT 발급~~ **해당 없음** | |
 | ~~V5~~ | ~~`getAnonymousKey()`로 로그인 대체~~ **해당 없음** | |
 | **V4** | 토스 WebView의 뒤로가기 제스처와 `HashRouter` + BottomSheet 조합이 충돌하지 않는가 | `setIosSwipeGestureEnabled` 등으로 제어. **3단계에서 확인** |
-| **V6** | `Storage`가 `permissions` 선언을 요구하는가 (현재 `permissions: []`) | 요구하면 `granite.config.ts`에 추가. **2단계에서 확인** |
+| ~~V6~~ | ~~`Storage`가 `permissions` 선언을 요구하는가~~ **해결(2단계).** 선언할 수 없다 — `Permission`은 `clipboard`/`geolocation`/`contacts`/`photos`/`camera`/`microphone` 6개짜리 닫힌 유니온이고 저장소 항목이 없다. `permissions: []`가 맞다 | (해당 없음) |
 | **V7** | `Storage`에 넣을 수 있는 **문자열 크기 한계**가 있는가. 월 12개 × 항목 9개 × 지출 수백 건이면 수백 KB가 된다 | 넘치면 월별로 키를 쪼갠다(`...:data:v2:2026-07`). 어댑터가 키만 아는 계층이라 교체 비용이 낮다 |
 
 **V7이 이 계획의 남은 리스크다.** 초안의 최대 리스크(V2)는 사라졌다.
