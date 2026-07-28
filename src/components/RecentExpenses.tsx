@@ -2,7 +2,6 @@ import { useState } from "react";
 import { ListHeader, ListRow, Paragraph, TextButton } from "@toss/tds-mobile";
 import { adaptive } from "@toss/tds-colors";
 import type { BudgetCategory, Expense } from "../types";
-import { paymentMethodLabel } from "../constants";
 import { buildCategoryNameLookup } from "../lib/category";
 import { sortExpensesByRecency } from "../lib/expense";
 import { formatCurrency, formatDateLabel } from "../lib/format";
@@ -67,9 +66,7 @@ export function RecentExpenses({ expenses, categories, onEdit }: RecentExpensesP
                   <ListRow.Texts
                     type="2RowTypeA"
                     top={categoryName(e.categoryId)}
-                    bottom={`${formatDateLabel(e.date)} · ${paymentMethodLabel(e.paymentMethod)}${
-                      e.memo ? ` · ${e.memo}` : ""
-                    }`}
+                    bottom={`${formatDateLabel(e.spentAt)}${e.memo ? ` · ${e.memo}` : ""}`}
                   />
                 }
                 right={

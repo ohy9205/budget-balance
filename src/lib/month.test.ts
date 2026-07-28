@@ -67,8 +67,8 @@ describe("createSeededMonth", () => {
     expect(created.categories.map((c) => c.name)).toEqual(
       DEFAULT_CATEGORY_SEED.map((s) => s.name),
     );
-    expect(created.categories.map((c) => c.monthlyBudget)).toEqual(
-      DEFAULT_CATEGORY_SEED.map((s) => s.monthlyBudget),
+    expect(created.categories.map((c) => c.budget)).toEqual(
+      DEFAULT_CATEGORY_SEED.map((s) => s.budget),
     );
   });
 
@@ -97,7 +97,7 @@ describe("copyBudgetFrom", () => {
   const cat = (patch: Partial<BudgetCategory>): BudgetCategory => ({
     id: "src-id",
     name: "장보기",
-    monthlyBudget: 100000,
+    budget: 100000,
     sortOrder: 0,
     ...patch,
   });
@@ -106,15 +106,14 @@ describe("copyBudgetFrom", () => {
     id: "e1",
     categoryId: "src-a",
     amount: 5000,
-    paymentMethod: "credit",
-    date: "2026-06-10",
+    spentAt: "2026-06-10",
     createdAt: "2026-06-10T00:00:00.000Z",
   };
 
   const source: MonthlyBudgetData = {
     month: "2026-06",
     categories: [
-      cat({ id: "src-b", name: "교통비", monthlyBudget: 80000, sortOrder: 1 }),
+      cat({ id: "src-b", name: "교통비", budget: 80000, sortOrder: 1 }),
       cat({ id: "src-a", name: "장보기", sortOrder: 0, seedKey: "groceries" }),
     ],
     expenses: [expense],
@@ -142,15 +141,18 @@ describe("copyBudgetFrom", () => {
     ]);
   });
 
-  it("이름·금액·목표액·정렬 순서는 그대로 유지한다", () => {
+  it("이름·아이콘·금액·목표액·정렬 순서는 그대로 유지한다", () => {
     const withTarget: MonthlyBudgetData = {
       ...source,
-      categories: [cat({ monthlyBudget: 270000, targetExpenseAmount: 25000, sortOrder: 3 })],
+      categories: [
+        cat({ icon: "cart", budget: 270000, targetAmountPerUse: 25000, sortOrder: 3 }),
+      ],
     };
     const [copied] = copyBudgetFrom(withTarget, "2026-07", idSeq()).categories;
     expect(copied.name).toBe("장보기");
-    expect(copied.monthlyBudget).toBe(270000);
-    expect(copied.targetExpenseAmount).toBe(25000);
+    expect(copied.icon).toBe("cart");
+    expect(copied.budget).toBe(270000);
+    expect(copied.targetAmountPerUse).toBe(25000);
     expect(copied.sortOrder).toBe(3);
   });
 

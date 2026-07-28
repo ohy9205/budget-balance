@@ -19,9 +19,9 @@ interface CategoryEditSheetProps {
  */
 export function CategoryEditSheet({ category, onSubmit, onClose }: CategoryEditSheetProps) {
   const [name, setName] = useState(category.name);
-  const [monthlyBudget, setMonthlyBudget] = useState<number | undefined>(category.monthlyBudget);
-  const [targetExpenseAmount, setTargetExpenseAmount] = useState<number | undefined>(
-    category.targetExpenseAmount,
+  const [budget, setBudget] = useState<number | undefined>(category.budget);
+  const [targetAmountPerUse, setTargetAmountPerUse] = useState<number | undefined>(
+    category.targetAmountPerUse,
   );
 
   const { open, close, onExited } = useDeferredClose(onClose);
@@ -30,7 +30,7 @@ export function CategoryEditSheet({ category, onSubmit, onClose }: CategoryEditS
   useAutoFocus(nameInputRef);
 
   // 빈 칸(undefined)과 0을 구분해야 하므로 검증은 순수 함수가 한다
-  const patch = buildCategoryEditPatch({ name, monthlyBudget, targetExpenseAmount });
+  const patch = buildCategoryEditPatch({ name, budget, targetAmountPerUse });
 
   const save = () => {
     if (!patch) return;
@@ -69,18 +69,18 @@ export function CategoryEditSheet({ category, onSubmit, onClose }: CategoryEditS
           label="월 예산"
           labelOption="sustain"
           suffix="원"
-          value={monthlyBudget}
-          onChange={setMonthlyBudget}
+          value={budget}
+          onChange={setBudget}
           paddingBottom={0}
         />
         <AmountField
           variant="box"
-          label="목표 1회 지출액"
+          label="1회 사용 목표 금액"
           labelOption="sustain"
           placeholder="없음"
           suffix="원"
-          value={targetExpenseAmount}
-          onChange={setTargetExpenseAmount}
+          value={targetAmountPerUse}
+          onChange={setTargetAmountPerUse}
           paddingBottom={0}
         />
       </div>

@@ -114,11 +114,7 @@ export function BudgetProvider({ children }: { children: ReactNode }) {
   function addExpense(input: NewExpenseInput) {
     const expense = createExpense(input, newId(), new Date().toISOString());
     mutateMonth((data) => ({ ...data, expenses: [...data.expenses, expense] }));
-    setPrefs((p) => ({
-      ...p,
-      lastCategoryId: input.categoryId,
-      lastPaymentMethod: input.paymentMethod,
-    }));
+    setPrefs((p) => ({ ...p, lastCategoryId: input.categoryId }));
   }
 
   function updateExpense(id: string, input: NewExpenseInput) {

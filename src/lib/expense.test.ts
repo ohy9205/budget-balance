@@ -2,20 +2,18 @@ import { describe, expect, it } from "vitest";
 import type { Expense, NewExpenseInput } from "../types";
 import { applyExpenseInput, createExpense, sortExpensesByRecency } from "./expense";
 
-const exp = (id: string, createdAt: string, date = "2026-07-10"): Expense => ({
+const exp = (id: string, createdAt: string, spentAt = "2026-07-10"): Expense => ({
   id,
   categoryId: "a",
   amount: 1000,
-  paymentMethod: "credit",
-  date,
+  spentAt,
   createdAt,
 });
 
 const input = (patch: Partial<NewExpenseInput> = {}): NewExpenseInput => ({
   categoryId: "cat",
   amount: 25000,
-  paymentMethod: "credit",
-  date: "2026-07-10",
+  spentAt: "2026-07-10",
   ...patch,
 });
 
@@ -26,8 +24,7 @@ describe("createExpense", () => {
       id: "given-id",
       categoryId: "cat",
       amount: 25000,
-      paymentMethod: "credit",
-      date: "2026-07-10",
+      spentAt: "2026-07-10",
       memo: undefined,
       createdAt: "2026-07-10T09:00:00.000Z",
     });
@@ -49,8 +46,7 @@ describe("applyExpenseInput", () => {
     id: "keep-id",
     categoryId: "old",
     amount: 1000,
-    paymentMethod: "credit",
-    date: "2026-07-01",
+    spentAt: "2026-07-01",
     memo: "이전 메모",
     createdAt: "2026-07-01T00:00:00.000Z",
   };
@@ -61,12 +57,11 @@ describe("applyExpenseInput", () => {
     expect(updated.createdAt).toBe("2026-07-01T00:00:00.000Z");
   });
 
-  it("항목·금액·결제수단·날짜를 새 값으로 바꾼다", () => {
-    const updated = applyExpenseInput(original, input({ paymentMethod: "debit" }));
+  it("항목·금액·날짜를 새 값으로 바꾼다", () => {
+    const updated = applyExpenseInput(original, input());
     expect(updated.categoryId).toBe("cat");
     expect(updated.amount).toBe(25000);
-    expect(updated.paymentMethod).toBe("debit");
-    expect(updated.date).toBe("2026-07-10");
+    expect(updated.spentAt).toBe("2026-07-10");
   });
 
   it("메모를 비우면 지워진다", () => {
@@ -89,7 +84,7 @@ describe("sortExpensesByRecency", () => {
     expect(sortExpensesByRecency(list).map((e) => e.id)).toEqual(["new", "mid", "old"]);
   });
 
-  it("createdAt이 같으면 date 내림차순", () => {
+  it("createdAt이 같으면 spentAt 내림차순", () => {
     const same = "2026-07-10T00:00:00.000Z";
     const list = [exp("d1", same, "2026-07-01"), exp("d2", same, "2026-07-09")];
     expect(sortExpensesByRecency(list).map((e) => e.id)).toEqual(["d2", "d1"]);

@@ -89,10 +89,11 @@ There is no lint script and no ESLint config (the lone `eslint-disable` comment 
 [BudgetContext.tsx](src/context/BudgetContext.tsx) is vestigial). `npm run build` — tsc with
 `strict`, `noUnusedLocals`, `noUnusedParameters` — is the only static check.
 
-The suite is five files under [src/lib/](src/lib/) (116 tests) running with `environment: "node"`:
+The suite is six files under [src/lib/](src/lib/) (136 tests) running with `environment: "node"`:
 [calculations.test.ts](src/lib/calculations.test.ts) (also covers `format.ts` / `date.ts`),
 [category.test.ts](src/lib/category.test.ts), [expense.test.ts](src/lib/expense.test.ts),
-[month.test.ts](src/lib/month.test.ts), [storage.test.ts](src/lib/storage.test.ts) (`sanitizeMonth`
+[month.test.ts](src/lib/month.test.ts), [onboarding.test.ts](src/lib/onboarding.test.ts),
+[storage.test.ts](src/lib/storage.test.ts) (`sanitizeMonth`
 only — `loadStore`/`saveStore` need a `localStorage` the node environment doesn't have). There is no
 jsdom, Testing Library, or setup file, so adding a component test means adding that config first.
 
@@ -112,8 +113,8 @@ Three layers, deliberately separated:
    split; building a month is not a storage concern. `id.ts`'s `newId()` is the one exception to
    purity (random), so functions that need ids take them as arguments — either a single
    `id`/`createdAt` (`createExpense`, `createCategory`) or an injectable `nextId: () => string`
-   defaulting to `newId` (`createSeededMonth`, `copyBudgetFrom`), the same pattern as
-   `projection(data, today)`. Tests pass a counter. Domain input types (`NewExpenseInput`,
+   defaulting to `newId` (`createSeededMonth`, `copyBudgetFrom`). Tests pass a counter.
+   `onboarding.ts`는 최초 설정 입력 검증만 담당한다. Domain input types (`NewExpenseInput`,
    `NewCategoryInput`) live in `types.ts`, **not** in the context file — components import types from
    here and only `useBudget`/`BudgetProvider` from layer 2. **Logic a component needs but React does
    not belongs here, not in the component** — e.g. `resolveInitialCategoryId`,
@@ -178,22 +179,25 @@ Three layers, deliberately separated:
 `loadStore` never throws on bad data: unknown values are normalized field by
 field and unusable records are dropped, falling back to an empty store. Any new persisted field
 needs a matching sanitizer in [storage.ts](src/lib/storage.ts), otherwise it silently disappears on
-reload. Storage keys are versioned (`budget-balance:data:v1`, `budget-balance:prefs:v1`) with
-`STORE_VERSION = 1`; a breaking shape change means a new key + migration, not a silent reinterpret.
+reload. Storage keys are versioned (`budget-balance:data:v2`, `budget-balance:prefs:v1`) with
+`STORE_VERSION = 2`; a breaking shape change means a new key + migration, not a silent reinterpret.
+v1은 `monthlyBudget`/`targetExpenseAmount`/`date`/`paymentMethod` 시절 키다 — 마이그레이션하지
+않고 버린다.
 
 ### Calculation rules worth knowing
 
-- `statusFromUsageRate`: `<60` safe / `60–<80` caution / `80–100` warning / `>100` over.
-  Thresholds live in `STATUS_THRESHOLDS`; the UI maps the four statuses to TDS colors in
-  [statusTheme.ts](src/components/statusTheme.ts).
+- `statusFromUsageRate`: `<70` normal / `70–<90` caution / `90–<100` warning / `==100` exhausted
+  (정확히 100) / `>100` over. Thresholds live in `STATUS_THRESHOLDS`; the UI maps the five statuses
+  to TDS colors in [statusTheme.ts](src/components/statusTheme.ts). `STATUS_LABEL`은 뱃지용 짧은
+  라벨, `STATUS_MESSAGE`는 사용자에게 보여 줄 문구다.
 - Zero-budget-with-spending is deliberately reported as `100 + used` rather than `Infinity`, so it
   sorts as "over" without breaking formatting. That rule lives **only** in `computeUsageRate`
   (used by both `categoryStats` and `monthlySummary`) — don't re-inline it.
 - `sortByOrder()` (in `category.ts`) is the single `sortOrder` comparator — categories are always
   displayed ascending, and it copies before sorting so callers never mutate store arrays.
-- `projection()` returns **`null` for any month that isn't the current month**; callers must handle
-  null rather than render a meaningless forecast. It accepts an injectable `today: Date` — tests rely
-  on this, so keep the parameter when editing.
+- `totalBudget(categories)`가 총생활비의 유일한 정의다 — 캐시 컬럼도, 별도 입력값도 두지 않는다.
+- `previewExpenseImpact` / `previewBudgetChange`는 저장하기 **전** 결과를 보여 주는 계산이다.
+  실제 상태를 바꾸지 않으므로 안내 문구 외의 용도로 쓰지 않는다.
 
 ### UI conventions
 
@@ -235,8 +239,6 @@ reload. Storage keys are versioned (`budget-balance:data:v1`, `budget-balance:pr
   in/out은 **숫자**다: `value: number | undefined`, `onChange(value: number | undefined)`이고
   **빈 칸이 `undefined`** 다. 빈 칸과 0을 구분해야 하는 검증(예: 항목 추가 폼의 "예산 미입력")이
   여기에 걸려 있으니 `?? 0`으로 뭉개지 말 것.
-- 결제수단은 [constants.ts](src/constants.ts)의 `PAYMENT_METHODS` 하나로 정의한다 —
-  `SegmentedControl` 항목도 하드코딩하지 않고 여기서 `map`하며, 표시 이름은 `paymentMethodLabel`.
 - **항목 추가·편집·삭제·순서 변경은 전부 대시보드에 있다** — 설정 화면에는 없다(이전에 있던
   `CategoryEditRow` / `AddCategoryForm`은 삭제했다). 편집은 롱프레스 메뉴가 여는
   [CategoryEditSheet.tsx](src/components/CategoryEditSheet.tsx), 추가는 목록 맨 아래
@@ -246,7 +248,7 @@ reload. Storage keys are versioned (`budget-balance:data:v1`, `budget-balance:pr
   진입점이 사라진 코드(`resetCategoryToDefault`, `categoryDefaultDiff`, `moveCategory`,
   `moveCategoryInList`, `resetCategoryToSeed`, `isValidNewCategory`)는 테스트까지 함께 지웠다 —
   "기본값으로 되돌리기"를 되살리려면 lib에 순수 함수 + 테스트부터 다시 쓴다.
-- 지출 시트가 실제로 편집하는 값은 **금액·항목·결제수단뿐**이다. `date`는 새 지출이면
+- 지출 시트가 실제로 편집하는 값은 **금액·항목뿐**이다. `spentAt`은 새 지출이면
   "현재 월이면 오늘, 아니면 그 달 1일", 수정이면 원본 유지고, `memo`는 타입·저장·정렬에는
   살아 있지만 입력 UI가 없다. 없는 게 아니라 화면에서 빠진 것이니 지우지 말 것.
 - `ListRow`는 `as="button"`으로 렌더링해 행 전체를 누를 수 있게 하며(`.cat-row`, `.exp-row`가

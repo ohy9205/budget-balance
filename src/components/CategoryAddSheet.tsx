@@ -15,8 +15,8 @@ interface CategoryAddSheetProps {
 /** 대시보드에서 항목을 추가하는 하단 시트. 설정 화면의 추가 폼과 달리 추가하면 바로 닫힌다. */
 export function CategoryAddSheet({ onSubmit, onClose }: CategoryAddSheetProps) {
   const [name, setName] = useState("");
-  const [monthlyBudget, setMonthlyBudget] = useState<number | undefined>(undefined);
-  const [targetExpenseAmount, setTargetExpenseAmount] = useState<number | undefined>(undefined);
+  const [budget, setBudget] = useState<number | undefined>(undefined);
+  const [targetAmountPerUse, setTargetAmountPerUse] = useState<number | undefined>(undefined);
 
   const { open, close, onExited } = useDeferredClose(onClose);
   const sheetMaxHeight = useSheetMaxHeight();
@@ -24,7 +24,7 @@ export function CategoryAddSheet({ onSubmit, onClose }: CategoryAddSheetProps) {
   useAutoFocus(nameInputRef);
 
   // 빈 칸(undefined)과 0을 구분해야 하므로 검증은 순수 함수가 한다
-  const input = buildNewCategoryInput({ name, monthlyBudget, targetExpenseAmount });
+  const input = buildNewCategoryInput({ name, budget, targetAmountPerUse });
 
   const submit = () => {
     if (!input) return;
@@ -63,18 +63,18 @@ export function CategoryAddSheet({ onSubmit, onClose }: CategoryAddSheetProps) {
           label="월 예산"
           labelOption="sustain"
           suffix="원"
-          value={monthlyBudget}
-          onChange={setMonthlyBudget}
+          value={budget}
+          onChange={setBudget}
           paddingBottom={0}
         />
         <AmountField
           variant="box"
-          label="목표 1회 지출액"
+          label="1회 사용 목표 금액"
           labelOption="sustain"
           placeholder="없음"
           suffix="원"
-          value={targetExpenseAmount}
-          onChange={setTargetExpenseAmount}
+          value={targetAmountPerUse}
+          onChange={setTargetAmountPerUse}
           paddingBottom={0}
         />
       </div>

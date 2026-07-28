@@ -21,8 +21,7 @@ export function createExpense(
     id,
     categoryId: input.categoryId,
     amount: Math.round(input.amount),
-    paymentMethod: input.paymentMethod,
-    date: input.date,
+    spentAt: input.spentAt,
     memo: normalizeMemo(input.memo),
     createdAt,
   };
@@ -34,16 +33,15 @@ export function applyExpenseInput(expense: Expense, input: NewExpenseInput): Exp
     ...expense,
     categoryId: input.categoryId,
     amount: Math.round(input.amount),
-    paymentMethod: input.paymentMethod,
-    date: input.date,
+    spentAt: input.spentAt,
     memo: normalizeMemo(input.memo),
   };
 }
 
-/** 최신순 정렬 — `createdAt` 내림차순, 같으면 `date` 내림차순 (원본은 그대로 둔다) */
+/** 최신순 정렬 — `createdAt` 내림차순, 같으면 `spentAt` 내림차순 (원본은 그대로 둔다) */
 export function sortExpensesByRecency(expenses: Expense[]): Expense[] {
   return [...expenses].sort((a, b) => {
     if (a.createdAt !== b.createdAt) return a.createdAt < b.createdAt ? 1 : -1;
-    return a.date < b.date ? 1 : -1;
+    return a.spentAt < b.spentAt ? 1 : -1;
   });
 }

@@ -1,11 +1,4 @@
-import type {
-  BudgetCategory,
-  BudgetStore,
-  Expense,
-  MonthlyBudgetData,
-  PaymentMethod,
-  Prefs,
-} from "../types";
+import type { BudgetCategory, BudgetStore, Expense, MonthlyBudgetData, Prefs } from "../types";
 import {
   DEFAULT_CATEGORY_SEED,
   findCategorySeed,
@@ -16,7 +9,6 @@ import {
 import { isValidMonthKey } from "./date";
 import { newId } from "./id";
 
-const isPaymentMethod = (v: unknown): v is PaymentMethod => v === "credit" || v === "debit";
 const isFiniteNumber = (v: unknown): v is number => typeof v === "number" && Number.isFinite(v);
 const isNonEmptyString = (v: unknown): v is string => typeof v === "string" && v.length > 0;
 
@@ -36,16 +28,17 @@ function sanitizeCategory(raw: unknown, index: number): BudgetCategory | null {
   if (typeof raw !== "object" || raw === null) return null;
   const r = raw as Record<string, unknown>;
   if (!isNonEmptyString(r.name)) return null;
-  const monthlyBudget = isFiniteNumber(r.monthlyBudget) ? Math.max(0, Math.round(r.monthlyBudget)) : 0;
+  const budget = isFiniteNumber(r.budget) ? Math.max(0, Math.round(r.budget)) : 0;
   const target =
-    isFiniteNumber(r.targetExpenseAmount) && r.targetExpenseAmount > 0
-      ? Math.round(r.targetExpenseAmount)
+    isFiniteNumber(r.targetAmountPerUse) && r.targetAmountPerUse > 0
+      ? Math.round(r.targetAmountPerUse)
       : undefined;
   return {
     id: isNonEmptyString(r.id) ? r.id : newId(),
     name: r.name,
-    monthlyBudget,
-    targetExpenseAmount: target,
+    icon: isNonEmptyString(r.icon) ? r.icon : undefined,
+    budget,
+    targetAmountPerUse: target,
     sortOrder: isFiniteNumber(r.sortOrder) ? r.sortOrder : index,
     seedKey: sanitizeSeedKey(r.seedKey, r.name),
   };
@@ -58,14 +51,12 @@ function sanitizeExpense(raw: unknown, validCategoryIds: Set<string>): Expense |
   if (!isNonEmptyString(r.id)) return null;
   if (!isNonEmptyString(r.categoryId) || !validCategoryIds.has(r.categoryId)) return null;
   if (!isFiniteNumber(r.amount) || r.amount <= 0) return null;
-  if (!isPaymentMethod(r.paymentMethod)) return null;
-  if (!isNonEmptyString(r.date)) return null;
+  if (!isNonEmptyString(r.spentAt)) return null;
   return {
     id: r.id,
     categoryId: r.categoryId,
     amount: Math.round(r.amount),
-    paymentMethod: r.paymentMethod,
-    date: r.date,
+    spentAt: r.spentAt,
     memo: isNonEmptyString(r.memo) ? r.memo : undefined,
     createdAt: isNonEmptyString(r.createdAt) ? r.createdAt : new Date().toISOString(),
   };
@@ -126,9 +117,6 @@ export function loadPrefs(): Prefs {
     const parsed = JSON.parse(raw) as Record<string, unknown>;
     return {
       lastCategoryId: isNonEmptyString(parsed.lastCategoryId) ? parsed.lastCategoryId : undefined,
-      lastPaymentMethod: isPaymentMethod(parsed.lastPaymentMethod)
-        ? parsed.lastPaymentMethod
-        : undefined,
     };
   } catch {
     return {};

@@ -2,8 +2,8 @@
  * 월 데이터(`MonthlyBudgetData`)와 월 저장소(`BudgetStore.months`)를 다루는 순수 로직.
  * 영속화(localStorage)는 [storage.ts](./storage.ts)가 담당한다 — 여기는 값 변환만 한다.
  *
- * id를 발급하는 함수는 `nextId`를 인자로 받는다(기본값 `newId`). 테스트에서 결정론적인
- * id를 넣기 위한 것으로, `projection(data, today)`의 `today`와 같은 방식이다.
+ * id를 발급하는 함수는 `nextId`를 인자로 받는다(기본값 `newId`) — 테스트에서 결정론적인
+ * id를 넣기 위한 것이다.
  */
 
 import type { BudgetCategory, MonthlyBudgetData } from "../types";
@@ -63,8 +63,9 @@ export function copyBudgetFrom(
   const categories: BudgetCategory[] = sortByOrder(source.categories).map((c) => ({
     id: nextId(),
     name: c.name,
-    monthlyBudget: c.monthlyBudget,
-    targetExpenseAmount: c.targetExpenseAmount,
+    icon: c.icon,
+    budget: c.budget,
+    targetAmountPerUse: c.targetAmountPerUse,
     sortOrder: c.sortOrder,
     // 기본 항목 여부는 월을 넘어가도 유지된다 (id만 새로 발급)
     seedKey: c.seedKey,

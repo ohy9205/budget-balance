@@ -16,13 +16,12 @@ const raw = (categories: unknown[], expenses: unknown[] = []) => ({
 });
 
 /** 기본 항목과 이름이 겹치지 않는 항목 (겹치면 seedKey가 이름으로 복원된다) */
-const validCategory = { id: "c1", name: "커피", monthlyBudget: 100000, sortOrder: 0 };
+const validCategory = { id: "c1", name: "커피", budget: 100000, sortOrder: 0 };
 const validExpense = {
   id: "e1",
   categoryId: "c1",
   amount: 5000,
-  paymentMethod: "credit",
-  date: "2026-07-10",
+  spentAt: "2026-07-10",
   createdAt: "2026-07-10T00:00:00.000Z",
 };
 
@@ -63,25 +62,31 @@ describe("sanitizeMonth — 항목 정규화", () => {
 
   it("이름이 없으면 그 항목을 버린다", () => {
     expect(sanitizeMonth(raw([{ ...validCategory, name: "" }]))!.categories).toEqual([]);
-    expect(sanitizeMonth(raw([{ monthlyBudget: 1 }]))!.categories).toEqual([]);
+    expect(sanitizeMonth(raw([{ budget: 1 }]))!.categories).toEqual([]);
     expect(sanitizeMonth(raw([null, 7]))!.categories).toEqual([]);
   });
 
   it("예산이 없거나 숫자가 아니면 0", () => {
-    expect(firstCategory({ monthlyBudget: undefined }).monthlyBudget).toBe(0);
-    expect(firstCategory({ monthlyBudget: "10000" }).monthlyBudget).toBe(0);
-    expect(firstCategory({ monthlyBudget: Infinity }).monthlyBudget).toBe(0);
+    expect(firstCategory({ budget: undefined }).budget).toBe(0);
+    expect(firstCategory({ budget: "10000" }).budget).toBe(0);
+    expect(firstCategory({ budget: Infinity }).budget).toBe(0);
   });
 
   it("예산은 음수 방지·정수화", () => {
-    expect(firstCategory({ monthlyBudget: -5000 }).monthlyBudget).toBe(0);
-    expect(firstCategory({ monthlyBudget: 1000.6 }).monthlyBudget).toBe(1001);
+    expect(firstCategory({ budget: -5000 }).budget).toBe(0);
+    expect(firstCategory({ budget: 1000.6 }).budget).toBe(1001);
   });
 
   it("목표액은 0 이하면 undefined, 있으면 정수화", () => {
-    expect(firstCategory({ targetExpenseAmount: 0 }).targetExpenseAmount).toBeUndefined();
-    expect(firstCategory({ targetExpenseAmount: -1 }).targetExpenseAmount).toBeUndefined();
-    expect(firstCategory({ targetExpenseAmount: 250.4 }).targetExpenseAmount).toBe(250);
+    expect(firstCategory({ targetAmountPerUse: 0 }).targetAmountPerUse).toBeUndefined();
+    expect(firstCategory({ targetAmountPerUse: -1 }).targetAmountPerUse).toBeUndefined();
+    expect(firstCategory({ targetAmountPerUse: 250.4 }).targetAmountPerUse).toBe(250);
+  });
+
+  it("아이콘은 문자열일 때만 남는다", () => {
+    expect(firstCategory({ icon: "coffee" }).icon).toBe("coffee");
+    expect(firstCategory({ icon: 7 }).icon).toBeUndefined();
+    expect(firstCategory({ icon: undefined }).icon).toBeUndefined();
   });
 
   it("id가 없으면 새로 발급한다", () => {
@@ -91,8 +96,8 @@ describe("sanitizeMonth — 항목 정규화", () => {
   it("sortOrder가 없으면 배열 순서를 쓴다", () => {
     const m = sanitizeMonth(
       raw([
-        { name: "a", monthlyBudget: 1 },
-        { name: "b", monthlyBudget: 1 },
+        { name: "a", budget: 1 },
+        { name: "b", budget: 1 },
       ]),
     )!;
     expect(m.categories.map((c) => c.sortOrder)).toEqual([0, 1]);
@@ -111,7 +116,7 @@ describe("sanitizeMonth — seedKey 복원", () => {
   });
 
   it("키가 없는 예전 데이터는 이름으로 기본 항목을 찾아 붙인다", () => {
-    const m = sanitizeMonth(raw([{ id: "c1", name: seed.name, monthlyBudget: 1, sortOrder: 0 }]))!;
+    const m = sanitizeMonth(raw([{ id: "c1", name: seed.name, budget: 1, sortOrder: 0 }]))!;
     expect(m.categories[0].seedKey).toBe(seed.key);
   });
 
@@ -120,7 +125,7 @@ describe("sanitizeMonth — seedKey 복원", () => {
   });
 
   it("직접 추가한 항목도 이름이 기본 항목과 같으면 seedKey가 붙는다 (이름 기반 복원의 부작용)", () => {
-    const m = sanitizeMonth(raw([{ id: "c1", name: seed.name, monthlyBudget: 999, sortOrder: 0 }]))!;
+    const m = sanitizeMonth(raw([{ id: "c1", name: seed.name, budget: 999, sortOrder: 0 }]))!;
     expect(m.categories[0].seedKey).toBe(seed.key);
   });
 });
@@ -143,18 +148,13 @@ describe("sanitizeMonth — 지출 정규화", () => {
 
   it("id·날짜가 없으면 버린다", () => {
     expect(dropped({ id: undefined })).toEqual([]);
-    expect(dropped({ date: undefined })).toEqual([]);
+    expect(dropped({ spentAt: undefined })).toEqual([]);
   });
 
   it("금액이 0 이하거나 숫자가 아니면 버린다", () => {
     expect(dropped({ amount: 0 })).toEqual([]);
     expect(dropped({ amount: -100 })).toEqual([]);
     expect(dropped({ amount: "5000" })).toEqual([]);
-  });
-
-  it("결제수단이 credit/debit이 아니면 버린다", () => {
-    expect(dropped({ paymentMethod: "cash" })).toEqual([]);
-    expect(dropped({ paymentMethod: undefined })).toEqual([]);
   });
 
   it("금액은 정수화한다", () => {

@@ -12,14 +12,14 @@ import {
   type NewCategoryFields,
 } from "./category";
 
-/** 목표 1회 지출액이 있는 기본 항목 — 시드 내용이 바뀌어도 테스트가 따라간다 */
-const seed = DEFAULT_CATEGORY_SEED.find((s) => s.targetExpenseAmount)!;
+/** 1회 사용 목표 금액이 있는 기본 항목 — 시드 내용이 바뀌어도 테스트가 따라간다 */
+const seed = DEFAULT_CATEGORY_SEED.find((s) => s.targetAmountPerUse)!;
 
 const fromSeed = (patch: Partial<BudgetCategory> = {}): BudgetCategory => ({
   id: "c1",
   name: seed.name,
-  monthlyBudget: seed.monthlyBudget,
-  targetExpenseAmount: seed.targetExpenseAmount,
+  budget: seed.budget,
+  targetAmountPerUse: seed.targetAmountPerUse,
   sortOrder: seed.sortOrder,
   seedKey: seed.key,
   ...patch,
@@ -27,8 +27,8 @@ const fromSeed = (patch: Partial<BudgetCategory> = {}): BudgetCategory => ({
 
 const fields = (patch: Partial<NewCategoryFields> = {}): NewCategoryFields => ({
   name: "새 항목",
-  monthlyBudget: 50000,
-  targetExpenseAmount: undefined,
+  budget: 50000,
+  targetAmountPerUse: undefined,
   ...patch,
 });
 
@@ -89,28 +89,35 @@ describe("buildNewCategoryInput", () => {
   it("이름은 trim하고 금액은 정수로", () => {
     expect(buildNewCategoryInput(fields({ name: "  간식  " }))).toEqual({
       name: "간식",
-      monthlyBudget: 50000,
-      targetExpenseAmount: undefined,
+      icon: undefined,
+      budget: 50000,
+      targetAmountPerUse: undefined,
     });
   });
 
+  it("아이콘을 넣으면 함께 담는다", () => {
+    expect(buildNewCategoryInput(fields({ icon: "coffee" }))?.icon).toBe("coffee");
+  });
+
   it("목표액을 넣으면 함께 담는다", () => {
-    expect(
-      buildNewCategoryInput(fields({ targetExpenseAmount: 25000 }))?.targetExpenseAmount,
-    ).toBe(25000);
+    expect(buildNewCategoryInput(fields({ targetAmountPerUse: 25000 }))?.targetAmountPerUse).toBe(
+      25000,
+    );
   });
 
   it("목표액이 비었거나 0이면 undefined", () => {
     expect(
-      buildNewCategoryInput(fields({ targetExpenseAmount: undefined }))?.targetExpenseAmount,
+      buildNewCategoryInput(fields({ targetAmountPerUse: undefined }))?.targetAmountPerUse,
     ).toBeUndefined();
     expect(
-      buildNewCategoryInput(fields({ targetExpenseAmount: 0 }))?.targetExpenseAmount,
+      buildNewCategoryInput(fields({ targetAmountPerUse: 0 }))?.targetAmountPerUse,
     ).toBeUndefined();
   });
 
-  it("예산 0은 유효한 항목", () => {
-    expect(buildNewCategoryInput(fields({ monthlyBudget: 0 }))?.monthlyBudget).toBe(0);
+  it("예산은 0보다 커야 한다", () => {
+    expect(buildNewCategoryInput(fields({ budget: 0 }))).toBeNull();
+    expect(buildNewCategoryInput(fields({ budget: -1 }))).toBeNull();
+    expect(buildNewCategoryInput(fields({ budget: 1 }))?.budget).toBe(1);
   });
 
   it("이름이 비면 null", () => {
@@ -118,7 +125,7 @@ describe("buildNewCategoryInput", () => {
   });
 
   it("월 예산 칸이 비면 null", () => {
-    expect(buildNewCategoryInput(fields({ monthlyBudget: undefined }))).toBeNull();
+    expect(buildNewCategoryInput(fields({ budget: undefined }))).toBeNull();
   });
 });
 
@@ -126,41 +133,44 @@ describe("createCategory", () => {
   const existing = [fromSeed({ id: "a", sortOrder: 0 }), fromSeed({ id: "b", sortOrder: 3 })];
 
   it("정렬 순서는 기존 최대값 +1 (맨 아래)", () => {
-    expect(createCategory({ name: "x", monthlyBudget: 1 }, existing, "new").sortOrder).toBe(4);
+    expect(createCategory({ name: "x", budget: 1 }, existing, "new").sortOrder).toBe(4);
   });
 
   it("빈 목록이면 0부터", () => {
-    expect(createCategory({ name: "x", monthlyBudget: 1 }, [], "new").sortOrder).toBe(0);
+    expect(createCategory({ name: "x", budget: 1 }, [], "new").sortOrder).toBe(0);
   });
 
   it("이름 trim·금액 정수화", () => {
     const c = createCategory(
-      { name: "  간식 ", monthlyBudget: 1000.6, targetExpenseAmount: 250.4 },
+      { name: "  간식 ", budget: 1000.6, targetAmountPerUse: 250.4 },
       [],
       "new",
     );
     expect(c.name).toBe("간식");
-    expect(c.monthlyBudget).toBe(1001);
-    expect(c.targetExpenseAmount).toBe(250);
+    expect(c.budget).toBe(1001);
+    expect(c.targetAmountPerUse).toBe(250);
   });
 
   it("음수 예산은 0으로", () => {
-    expect(createCategory({ name: "x", monthlyBudget: -5000 }, [], "new").monthlyBudget).toBe(0);
+    expect(createCategory({ name: "x", budget: -5000 }, [], "new").budget).toBe(0);
+  });
+
+  it("아이콘은 그대로 담는다", () => {
+    expect(createCategory({ name: "x", budget: 1, icon: "coffee" }, [], "new").icon).toBe("coffee");
   });
 
   it("목표액이 0 이하면 undefined", () => {
     expect(
-      createCategory({ name: "x", monthlyBudget: 1, targetExpenseAmount: 0 }, [], "new")
-        .targetExpenseAmount,
+      createCategory({ name: "x", budget: 1, targetAmountPerUse: 0 }, [], "new").targetAmountPerUse,
     ).toBeUndefined();
   });
 
   it("직접 추가한 항목이라 seedKey가 없다", () => {
-    expect(createCategory({ name: "x", monthlyBudget: 1 }, [], "new").seedKey).toBeUndefined();
+    expect(createCategory({ name: "x", budget: 1 }, [], "new").seedKey).toBeUndefined();
   });
 
   it("id는 인자로 받은 값", () => {
-    expect(createCategory({ name: "x", monthlyBudget: 1 }, [], "given-id").id).toBe("given-id");
+    expect(createCategory({ name: "x", budget: 1 }, [], "given-id").id).toBe("given-id");
   });
 });
 
@@ -216,11 +226,12 @@ describe("moveCategoryToIndex", () => {
 });
 
 describe("buildCategoryEditPatch", () => {
-  it("정상 입력이면 이름·월 예산·목표액 패치", () => {
-    expect(buildCategoryEditPatch(fields({ name: " 식비 ", monthlyBudget: 300000 }))).toEqual({
+  it("정상 입력이면 이름·아이콘·월 예산·목표액 패치", () => {
+    expect(buildCategoryEditPatch(fields({ name: " 식비 ", budget: 300000 }))).toEqual({
       name: "식비",
-      monthlyBudget: 300000,
-      targetExpenseAmount: undefined,
+      icon: undefined,
+      budget: 300000,
+      targetAmountPerUse: undefined,
     });
   });
 
@@ -229,27 +240,22 @@ describe("buildCategoryEditPatch", () => {
   });
 
   it("예산 칸이 비어 있으면(undefined) null", () => {
-    expect(buildCategoryEditPatch(fields({ monthlyBudget: undefined }))).toBeNull();
+    expect(buildCategoryEditPatch(fields({ budget: undefined }))).toBeNull();
   });
 
-  it("예산 0은 저장할 수 있다", () => {
-    expect(buildCategoryEditPatch(fields({ monthlyBudget: 0 }))?.monthlyBudget).toBe(0);
-  });
-
-  it("음수 예산은 null", () => {
-    expect(buildCategoryEditPatch(fields({ monthlyBudget: -1 }))).toBeNull();
+  it("예산 0 이하는 null", () => {
+    expect(buildCategoryEditPatch(fields({ budget: 0 }))).toBeNull();
+    expect(buildCategoryEditPatch(fields({ budget: -1 }))).toBeNull();
   });
 
   it("목표액이 0 이하면 없음(undefined)", () => {
-    expect(buildCategoryEditPatch(fields({ targetExpenseAmount: 0 }))?.targetExpenseAmount)
+    expect(buildCategoryEditPatch(fields({ targetAmountPerUse: 0 }))?.targetAmountPerUse)
       .toBeUndefined();
   });
 
   it("금액은 정수로 반올림한다", () => {
-    const patch = buildCategoryEditPatch(
-      fields({ monthlyBudget: 1000.6, targetExpenseAmount: 99.4 }),
-    );
-    expect(patch?.monthlyBudget).toBe(1001);
-    expect(patch?.targetExpenseAmount).toBe(99);
+    const patch = buildCategoryEditPatch(fields({ budget: 1000.6, targetAmountPerUse: 99.4 }));
+    expect(patch?.budget).toBe(1001);
+    expect(patch?.targetAmountPerUse).toBe(99);
   });
 });

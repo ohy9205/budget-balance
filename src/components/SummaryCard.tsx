@@ -2,14 +2,13 @@ import type { CSSProperties } from "react";
 import { Paragraph, ProgressBar } from "@toss/tds-mobile";
 import { adaptive } from "@toss/tds-colors";
 import type { MonthlyBudgetData } from "../types";
-import { monthlySummary, projection, statusFromUsageRate } from "../lib/calculations";
+import { monthlySummary, statusFromUsageRate } from "../lib/calculations";
 import { formatCurrency, formatPercent } from "../lib/format";
 import { StatusBadge } from "./StatusBadge";
 import { STATUS_COLOR, toProgress } from "./statusTheme";
 
 export function SummaryCard({ data }: { data: MonthlyBudgetData }) {
   const summary = monthlySummary(data);
-  const proj = projection(data);
   const status = statusFromUsageRate(summary.totalRate);
   const over = summary.totalRemaining < 0;
 
@@ -68,39 +67,6 @@ export function SummaryCard({ data }: { data: MonthlyBudgetData }) {
           </span>
         </div>
       </div>
-
-      <div className="summary-foot">
-        <SummaryStat label="신용" value={formatCurrency(summary.usedByMethod.credit)} />
-        <SummaryStat label="체크" value={formatCurrency(summary.usedByMethod.debit)} />
-        {proj && (
-          <SummaryStat
-            label="예상 잔액"
-            value={formatCurrency(proj.projectedRemaining)}
-            color={proj.projectedRemaining < 0 ? adaptive.red500 : undefined}
-          />
-        )}
-      </div>
     </section>
-  );
-}
-
-function SummaryStat({
-  label,
-  value,
-  color,
-}: {
-  label: string;
-  value: string;
-  color?: string;
-}) {
-  return (
-    <span className="summary-stat">
-      <Paragraph typography="st13" color={adaptive.grey500}>
-        <Paragraph.Text>{label}</Paragraph.Text>
-      </Paragraph>
-      <Paragraph typography="t7" fontWeight="semibold" color={color ?? adaptive.grey800}>
-        <Paragraph.Text>{value}</Paragraph.Text>
-      </Paragraph>
-    </span>
   );
 }

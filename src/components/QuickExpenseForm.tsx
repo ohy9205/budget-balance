@@ -1,7 +1,6 @@
 import { useRef, useState } from "react";
-import { BottomSheet, Button, Chip, ChipItem, SegmentedControl } from "@toss/tds-mobile";
-import type { BudgetCategory, Expense, NewExpenseInput, PaymentMethod } from "../types";
-import { PAYMENT_METHODS } from "../constants";
+import { BottomSheet, Button, Chip, ChipItem } from "@toss/tds-mobile";
+import type { BudgetCategory, Expense, NewExpenseInput } from "../types";
 import { resolveInitialCategoryId, sortByOrder } from "../lib/category";
 import { useAutoFocus } from "../hooks/useAutoFocus";
 import { useDeferredClose } from "../hooks/useDeferredClose";
@@ -11,8 +10,7 @@ import { AmountField } from "./AmountField";
 interface QuickExpenseFormProps {
   categories: BudgetCategory[];
   defaultCategoryId?: string;
-  defaultPaymentMethod?: PaymentMethod;
-  defaultDate: string;
+  defaultSpentAt: string;
   /** 지정하면 수정 모드 — 값이 채워진 채로 열리고 날짜·메모는 원본을 유지한다. */
   editing?: Expense;
   onSubmit: (input: NewExpenseInput) => void;
@@ -28,8 +26,7 @@ interface QuickExpenseFormProps {
 export function QuickExpenseForm({
   categories,
   defaultCategoryId,
-  defaultPaymentMethod,
-  defaultDate,
+  defaultSpentAt,
   editing,
   onSubmit,
   onRequestDelete,
@@ -40,9 +37,6 @@ export function QuickExpenseForm({
   const [amount, setAmount] = useState<number | undefined>(editing?.amount);
   const [categoryId, setCategoryId] = useState(() =>
     resolveInitialCategoryId(sortedCategories, editing?.categoryId ?? defaultCategoryId),
-  );
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(
-    editing?.paymentMethod ?? defaultPaymentMethod ?? "credit",
   );
 
   const { open, close, runAfterClose, onExited } = useDeferredClose(onClose);
@@ -58,8 +52,7 @@ export function QuickExpenseForm({
     onSubmit({
       categoryId,
       amount: amountValue,
-      paymentMethod,
-      date: editing?.date ?? defaultDate,
+      spentAt: editing?.spentAt ?? defaultSpentAt,
       memo: editing?.memo,
     });
     close();
@@ -138,20 +131,6 @@ export function QuickExpenseForm({
         />
 
         <div className="sheet-fields">
-          <SegmentedControl
-            size="large"
-            alignment="fixed"
-            aria-label="결제수단"
-            value={paymentMethod}
-            onChange={(v) => setPaymentMethod(v as PaymentMethod)}
-          >
-            {PAYMENT_METHODS.map((m) => (
-              <SegmentedControl.Item key={m.value} value={m.value}>
-                {m.label}
-              </SegmentedControl.Item>
-            ))}
-          </SegmentedControl>
-
           <Chip wrap kind="select" margin="small" className="sheet-chips" aria-label="예산 항목">
             {sortedCategories.map((c) => (
               <ChipItem

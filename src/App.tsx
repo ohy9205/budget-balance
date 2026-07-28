@@ -44,7 +44,7 @@ function Dashboard() {
   const [deleteTarget, setDeleteTarget] = useState<Expense | null>(null);
 
   // 지출 입력 기본 날짜: 현재 월이면 오늘, 아니면 해당 월 1일
-  const defaultDate = isCurrentMonth(currentMonth) ? getDateKey() : `${currentMonth}-01`;
+  const defaultSpentAt = isCurrentMonth(currentMonth) ? getDateKey() : `${currentMonth}-01`;
 
   const handleSubmitExpense = (input: NewExpenseInput) => {
     if (expenseModal.mode === "edit") {
@@ -142,8 +142,7 @@ function Dashboard() {
           defaultCategoryId={
             expenseModal.mode === "add" ? expenseModal.categoryId ?? prefs.lastCategoryId : undefined
           }
-          defaultPaymentMethod={prefs.lastPaymentMethod}
-          defaultDate={defaultDate}
+          defaultSpentAt={defaultSpentAt}
           editing={expenseModal.mode === "edit" ? expenseModal.expense : undefined}
           onSubmit={handleSubmitExpense}
           onRequestDelete={(expense) => setDeleteTarget(expense)}

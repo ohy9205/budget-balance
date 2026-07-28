@@ -1,12 +1,12 @@
-export type PaymentMethod = "credit" | "debit";
-
 export interface BudgetCategory {
   id: string;
   name: string;
+  /** 아이콘 키 (선택) */
+  icon?: string;
   /** 월 예산 (정수, 원 단위) */
-  monthlyBudget: number;
-  /** 목표 1회 지출액 (정수, 원 단위). 없으면 남은 사용 가능 횟수를 계산하지 않는다. */
-  targetExpenseAmount?: number;
+  budget: number;
+  /** 1회 사용 목표 금액 (정수, 원 단위). 없으면 남은 사용 가능 횟수를 계산하지 않는다. */
+  targetAmountPerUse?: number;
   /** 카드 정렬 순서 (오름차순) */
   sortOrder: number;
   /**
@@ -21,9 +21,8 @@ export interface Expense {
   categoryId: string;
   /** 지출 금액 (정수, 원 단위, 0보다 큼) */
   amount: number;
-  paymentMethod: PaymentMethod;
   /** 지출 날짜 "YYYY-MM-DD" */
-  date: string;
+  spentAt: string;
   memo?: string;
   /** 생성 시각 ISO 문자열 — 최근순 정렬에 사용 */
   createdAt: string;
@@ -46,24 +45,36 @@ export interface BudgetStore {
 export interface NewExpenseInput {
   categoryId: string;
   amount: number;
-  paymentMethod: PaymentMethod;
   /** "YYYY-MM-DD" */
-  date: string;
+  spentAt: string;
   memo?: string;
 }
 
 /** 항목 추가 입력값 (금액은 정수 원 단위) */
 export interface NewCategoryInput {
   name: string;
-  monthlyBudget: number;
-  targetExpenseAmount?: number;
+  icon?: string;
+  budget: number;
+  targetAmountPerUse?: number;
 }
 
 /** 항목 수정 입력값. `seedKey`는 기본값을 찾아가는 참조이므로 수정 대상에서 제외한다. */
 export type CategoryPatch = Partial<Omit<BudgetCategory, "id" | "seedKey">>;
 
+/** 온보딩에서 설정 중인 항목 하나. 금액 칸이 비어 있으면 undefined다. */
+export interface OnboardingCategoryDraft {
+  name: string;
+  icon?: string;
+  budget: number | undefined;
+  targetAmountPerUse?: number;
+}
+
+/** 온보딩 3단계를 거치며 모은 입력값 */
+export interface OnboardingDraft {
+  categories: OnboardingCategoryDraft[];
+}
+
 /** 최근 사용 값 기억 (빠른 입력 편의) */
 export interface Prefs {
   lastCategoryId?: string;
-  lastPaymentMethod?: PaymentMethod;
 }

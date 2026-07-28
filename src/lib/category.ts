@@ -36,28 +36,30 @@ export function resolveInitialCategoryId(
 /** 항목 추가 폼의 입력값. 금액 칸이 비어 있으면 undefined다(`AmountField`가 그렇게 준다). */
 export interface NewCategoryFields {
   name: string;
-  monthlyBudget: number | undefined;
-  targetExpenseAmount: number | undefined;
+  icon?: string;
+  budget: number | undefined;
+  targetAmountPerUse: number | undefined;
 }
 
 /** 폼 입력 → `addCategory` 입력값. 항목을 만들 수 없으면 null */
 export function buildNewCategoryInput(fields: NewCategoryFields): NewCategoryInput | null {
   const name = fields.name.trim();
-  const { monthlyBudget, targetExpenseAmount: target } = fields;
-  if (!name || monthlyBudget === undefined) return null;
-  if (!Number.isFinite(monthlyBudget) || monthlyBudget < 0) return null;
+  const { budget, targetAmountPerUse: target } = fields;
+  if (!name || budget === undefined) return null;
+  if (!Number.isFinite(budget) || budget <= 0) return null;
 
   return {
     name,
-    monthlyBudget: Math.round(monthlyBudget),
+    icon: fields.icon,
+    budget: Math.round(budget),
     // 목표액은 선택 입력 — 없거나 0 이하면 "없음"
-    targetExpenseAmount: target && target > 0 ? Math.round(target) : undefined,
+    targetAmountPerUse: target && target > 0 ? Math.round(target) : undefined,
   };
 }
 
 /**
  * 편집 폼 입력값 → `updateCategory` 패치. 저장할 수 없으면 null이다.
- * 규칙은 `buildNewCategoryInput`과 같다 — 이름 필수, 월 예산 필수(0은 허용, 빈 칸은 불가),
+ * 규칙은 `buildNewCategoryInput`과 같다 — 이름 필수, 월 예산은 0보다 커야 하고,
  * 목표액은 0 이하면 "없음".
  */
 export function buildCategoryEditPatch(fields: NewCategoryFields): CategoryPatch | null {
@@ -66,8 +68,9 @@ export function buildCategoryEditPatch(fields: NewCategoryFields): CategoryPatch
 
   return {
     name: input.name,
-    monthlyBudget: input.monthlyBudget,
-    targetExpenseAmount: input.targetExpenseAmount,
+    icon: input.icon,
+    budget: input.budget,
+    targetAmountPerUse: input.targetAmountPerUse,
   };
 }
 
@@ -85,10 +88,11 @@ export function createCategory(
   return {
     id,
     name: input.name.trim(),
-    monthlyBudget: Math.max(0, Math.round(input.monthlyBudget)),
-    targetExpenseAmount:
-      input.targetExpenseAmount && input.targetExpenseAmount > 0
-        ? Math.round(input.targetExpenseAmount)
+    icon: input.icon,
+    budget: Math.max(0, Math.round(input.budget)),
+    targetAmountPerUse:
+      input.targetAmountPerUse && input.targetAmountPerUse > 0
+        ? Math.round(input.targetAmountPerUse)
         : undefined,
     sortOrder: maxOrder + 1,
   };
