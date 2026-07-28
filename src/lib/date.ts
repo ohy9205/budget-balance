@@ -41,3 +41,8 @@ export function formatMonthLabel(month: string): string {
 export function isCurrentMonth(month: string, today: Date = new Date()): boolean {
   return month === getMonthKey(today);
 }
+
+/** month가 today가 속한 월보다 앞선 달인지 여부 */
+export function isPastMonth(month: string, today: Date = new Date()): boolean {
+  return month < getMonthKey(today);
+}

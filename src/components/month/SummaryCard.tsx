@@ -2,7 +2,7 @@ import type { CSSProperties } from "react";
 import { Paragraph, ProgressBar } from "@toss/tds-mobile";
 import { adaptive } from "@toss/tds-colors";
 import type { MonthlyBudgetData } from "../../types";
-import { monthlySummary, statusFromUsageRate } from "../../lib/calculations";
+import { STATUS_MESSAGE, monthlySummary, statusFromUsageRate } from "../../lib/calculations";
 import { formatCurrency, formatPercent } from "../../lib/format";
 import { StatusBadge } from "../common/StatusBadge";
 import { STATUS_COLOR, toProgress } from "../common/statusTheme";
@@ -16,7 +16,7 @@ export function SummaryCard({ data }: { data: MonthlyBudgetData }) {
     <section className="summary" aria-label="이번 달 전체 요약">
       <div className="summary-top">
         <Paragraph typography="t7" color={adaptive.grey600} fontWeight="medium">
-          <Paragraph.Text>이번 달 남은 금액</Paragraph.Text>
+          <Paragraph.Text>{over ? "이번 달 초과 금액" : "이번 달 남은 금액"}</Paragraph.Text>
         </Paragraph>
         <StatusBadge status={status} />
       </div>
@@ -26,7 +26,11 @@ export function SummaryCard({ data }: { data: MonthlyBudgetData }) {
         fontWeight="bold"
         color={over ? adaptive.red500 : adaptive.grey900}
       >
-        <Paragraph.Text>{formatCurrency(summary.totalRemaining)}</Paragraph.Text>
+        <Paragraph.Text>{formatCurrency(Math.abs(summary.totalRemaining))}</Paragraph.Text>
+      </Paragraph>
+
+      <Paragraph className="summary-message" typography="t6" color={adaptive.grey600}>
+        <Paragraph.Text>{STATUS_MESSAGE[status]}</Paragraph.Text>
       </Paragraph>
 
       <div

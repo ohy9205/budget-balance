@@ -68,12 +68,16 @@ export function CategoryCard({
                 </Paragraph>
                 <StatusBadge status={status} size="xsmall" />
               </div>
+              {/* 남은 금액이 이 카드의 첫 정보다 — 라벨을 붙여 예산·사용액과 헷갈리지 않게 한다 */}
               <Paragraph
                 typography="t4"
                 fontWeight="bold"
                 color={over ? adaptive.red500 : adaptive.grey900}
               >
-                <Paragraph.Text>{formatCurrency(remaining)}</Paragraph.Text>
+                <Paragraph.Text typography="t7" fontWeight="medium" color={adaptive.grey500}>
+                  {over ? "초과 " : "남은 "}
+                </Paragraph.Text>
+                <Paragraph.Text>{formatCurrency(Math.abs(remaining))}</Paragraph.Text>
               </Paragraph>
             </div>
 

@@ -12,7 +12,7 @@ import {
   totalBudget,
 } from "./calculations";
 import { formatCurrency, formatPercent } from "./format";
-import { addMonth } from "./date";
+import { addMonth, isCurrentMonth, isPastMonth } from "./date";
 
 const cat = (id: string, budget: number, target?: number, sortOrder = 0) => ({
   id,
@@ -205,5 +205,13 @@ describe("format & date 유틸", () => {
     expect(addMonth("2026-07", 1)).toBe("2026-08");
     expect(addMonth("2026-12", 1)).toBe("2027-01");
     expect(addMonth("2026-01", -1)).toBe("2025-12");
+  });
+  it("isCurrentMonth / isPastMonth", () => {
+    const today = new Date(2026, 6, 15);
+    expect(isCurrentMonth("2026-07", today)).toBe(true);
+    expect(isPastMonth("2026-07", today)).toBe(false);
+    expect(isPastMonth("2026-06", today)).toBe(true);
+    expect(isPastMonth("2025-12", today)).toBe(true);
+    expect(isPastMonth("2026-08", today)).toBe(false);
   });
 });

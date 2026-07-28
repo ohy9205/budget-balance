@@ -89,7 +89,7 @@ There is no lint script and no ESLint config (the lone `eslint-disable` comment 
 [BudgetContext.tsx](src/context/BudgetContext.tsx) is vestigial). `npm run build` — tsc with
 `strict`, `noUnusedLocals`, `noUnusedParameters` — is the only static check.
 
-The suite is six files under [src/lib/](src/lib/) (162 tests) running with `environment: "node"`:
+The suite is six files under [src/lib/](src/lib/) (163 tests) running with `environment: "node"`:
 [calculations.test.ts](src/lib/calculations.test.ts) (also covers `format.ts` / `date.ts`),
 [category.test.ts](src/lib/category.test.ts), [expense.test.ts](src/lib/expense.test.ts),
 [month.test.ts](src/lib/month.test.ts), [onboarding.test.ts](src/lib/onboarding.test.ts),
@@ -216,8 +216,8 @@ v1은 `monthlyBudget`/`targetExpenseAmount`/`date`/`paymentMethod` 시절 키다
 
 - `statusFromUsageRate`: `<70` normal / `70–<90` caution / `90–<100` warning / `==100` exhausted
   (정확히 100) / `>100` over. Thresholds live in `STATUS_THRESHOLDS`; the UI maps the five statuses
-  to TDS colors in [statusTheme.ts](src/components/statusTheme.ts). `STATUS_LABEL`은 뱃지용 짧은
-  라벨, `STATUS_MESSAGE`는 사용자에게 보여 줄 문구다.
+  to TDS colors in [statusTheme.ts](src/components/common/statusTheme.ts). `STATUS_LABEL`은 뱃지용
+  짧은 라벨(`StatusBadge`), `STATUS_MESSAGE`는 요약 카드가 보여 주는 문구다.
 - Zero-budget-with-spending is deliberately reported as `100 + used` rather than `Infinity`, so it
   sorts as "over" without breaking formatting. That rule lives **only** in `computeUsageRate`
   (used by both `categoryStats` and `monthlySummary`) — don't re-inline it.
@@ -305,6 +305,11 @@ v1은 `monthlyBudget`/`targetExpenseAmount`/`date`/`paymentMethod` 시절 키다
   건너뛰고 들어오면(새로고침 등) 초안이 비어 있으므로 각 화면이 `<Navigate>`로 첫 화면에
   되돌린다. **저장은 마지막 화면의 "이대로 시작하기" 한 번뿐**이고, 그 전까지는 저장소에 아무것도
   쓰지 않는다.
+- **지난달은 뱃지로만 구분한다** — [MonthSelector](src/components/month/MonthSelector.tsx)가
+  `isPastMonth`일 때 "지난달" 뱃지를 붙일 뿐, 편집은 이번 달과 똑같이 열려 있다. 지난 기록을
+  고칠 수 있어야 해서 일부러 막지 않았다.
+- 초과일 때 음수 금액을 그대로 쓰지 않는다 — 라벨을 "남은"에서 "초과"로 바꾸고 절댓값을 쓴다
+  (요약 카드·항목 카드 둘 다).
 - 설정은 오버레이가 아니라 라우트다([SettingsPage.tsx](src/pages/SettingsPage.tsx), `/settings`).
   하는 일은 상단바와 "이번 달 데이터 초기화" 확인 하나뿐이다 — 항목 관련 UI는 여기 두지 않는다.
   카드 없는 단색 화면이라 `.settings-page`가 셸의 회색 바닥을 흰색으로 덮는다.
