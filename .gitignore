@@ -9,3 +9,9 @@ dist-ssr
 
 .claude
 .vercel
+
+.granite
+
+.env
+.env.*
+!.env.example
