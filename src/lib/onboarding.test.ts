@@ -1,7 +1,13 @@
 import { describe, expect, it } from "vitest";
 import type { OnboardingCategoryDraft } from "../types";
 import { totalBudget } from "./calculations";
-import { buildOnboardingPlan } from "./onboarding";
+import {
+  buildOnboardingPlan,
+  canAddDraftCategory,
+  draftTotalBudget,
+  toggleDraftCategory,
+  updateDraftCategory,
+} from "./onboarding";
 
 const draft = (...categories: OnboardingCategoryDraft[]) => ({ categories });
 
@@ -9,6 +15,55 @@ const item = (patch: Partial<OnboardingCategoryDraft> = {}): OnboardingCategoryD
   name: "장보기",
   budget: 100000,
   ...patch,
+});
+
+describe("toggleDraftCategory", () => {
+  it("없던 항목은 예산이 빈 채로 맨 뒤에 붙는다", () => {
+    expect(toggleDraftCategory([item()], "교통")).toEqual([
+      item(),
+      { name: "교통", budget: undefined },
+    ]);
+  });
+
+  it("있던 항목은 빠진다", () => {
+    expect(toggleDraftCategory([item(), { name: "교통", budget: undefined }], "장보기")).toEqual([
+      { name: "교통", budget: undefined },
+    ]);
+  });
+});
+
+describe("canAddDraftCategory", () => {
+  it("빈 이름은 받지 않는다", () => {
+    expect(canAddDraftCategory([], "   ")).toBe(false);
+  });
+
+  it("이미 있는 이름은 받지 않는다 (trim 후 비교)", () => {
+    expect(canAddDraftCategory([item()], " 장보기 ")).toBe(false);
+  });
+
+  it("새 이름은 받는다", () => {
+    expect(canAddDraftCategory([item()], "교통")).toBe(true);
+  });
+});
+
+describe("updateDraftCategory", () => {
+  it("이름이 같은 항목의 금액만 바꾼다", () => {
+    const categories = [item(), item({ name: "교통", budget: 80000 })];
+    expect(updateDraftCategory(categories, "교통", { budget: 90000 })).toEqual([
+      item(),
+      item({ name: "교통", budget: 90000 }),
+    ]);
+  });
+
+  it("빈 칸(undefined)으로도 되돌릴 수 있다", () => {
+    expect(updateDraftCategory([item()], "장보기", { budget: undefined })[0].budget).toBeUndefined();
+  });
+});
+
+describe("draftTotalBudget", () => {
+  it("아직 비어 있는 칸은 0으로 센다", () => {
+    expect(draftTotalBudget([item(), item({ name: "교통", budget: undefined })])).toBe(100000);
+  });
 });
 
 describe("buildOnboardingPlan", () => {

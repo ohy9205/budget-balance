@@ -267,6 +267,52 @@ body {
   padding: 2px 8px;
 }
 
+/* ── 최초 설정 ────────────────────────────────────────── */
+.onboarding-page {
+  background: var(--adaptiveBackground);
+}
+
+.onboarding-body {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  /* 하단은 FixedBottomCTA + 총합 줄이 덮는 높이 */
+  padding-bottom: 148px;
+}
+
+/* 칩·ListHeader는 좌우 여백을 스스로 가지므로 제목 블록만 맞춰 준다 */
+.onboarding-head {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 24px 0;
+}
+
+.onboarding-block {
+  display: flex;
+  flex-direction: column;
+}
+
+.onboarding-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 0 24px;
+}
+
+/* 이름 입력이 남은 폭을 다 쓰고 버튼은 자기 크기만 갖는다 */
+.onboarding-add {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 24px;
+}
+
+.onboarding-add > *:first-child {
+  flex: 1;
+  min-width: 0;
+}
+
 /* ── 설정 화면 ────────────────────────────────────────── */
 /* 카드가 없는 단색 화면이라 셸의 회색 바닥을 흰색으로 덮는다 */
 .settings-page {

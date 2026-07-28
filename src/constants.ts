@@ -9,27 +9,17 @@ export interface CategorySeed extends Omit<BudgetCategory, "id" | "seedKey"> {
   key: string;
 }
 
-/** 앱 최초 실행 시 사용하는 기본 예산 항목 (= '기본값으로 되돌리기'의 기준) */
+/** 최초 설정에서 고르는 추천 항목 (= 예산을 입력하지 않고 만든 달의 기본값) */
 export const DEFAULT_CATEGORY_SEED: CategorySeed[] = [
-  {
-    key: "weekday-meal",
-    name: "평일 데이트",
-    budget: 270000,
-    targetAmountPerUse: 25000,
-    sortOrder: 0,
-  },
-  {
-    key: "saturday-date",
-    name: "주말 데이트",
-    budget: 250000,
-    targetAmountPerUse: 50000,
-    sortOrder: 1,
-  },
-  { key: "groceries", name: "장보기", budget: 100000, sortOrder: 2 },
-  { key: "transport", name: "교통비", budget: 80000, sortOrder: 3 },
-  { key: "telecom", name: "통신·구독", budget: 30000, sortOrder: 4 },
-  { key: "shopping", name: "쇼핑·미용·생활용품", budget: 70000, sortOrder: 5 },
-  { key: "medical", name: "병원·기타", budget: 70000, sortOrder: 6 },
+  { key: "meal", name: "식비", budget: 400000, targetAmountPerUse: 12000, sortOrder: 0 },
+  { key: "cafe", name: "카페·간식", budget: 100000, targetAmountPerUse: 6000, sortOrder: 1 },
+  { key: "transport", name: "교통", budget: 80000, sortOrder: 2 },
+  { key: "groceries", name: "장보기·생필품", budget: 150000, sortOrder: 3 },
+  { key: "shopping", name: "쇼핑·의류", budget: 100000, sortOrder: 4 },
+  { key: "culture", name: "문화·여가", budget: 100000, targetAmountPerUse: 20000, sortOrder: 5 },
+  { key: "health", name: "건강·의료", budget: 50000, sortOrder: 6 },
+  { key: "subscription", name: "구독·통신", budget: 50000, sortOrder: 7 },
+  { key: "etc", name: "경조사·기타", budget: 70000, sortOrder: 8 },
 ];
 
 /** 시드 키로 기본값 조회 (없으면 undefined) */

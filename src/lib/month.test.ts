@@ -3,6 +3,7 @@ import type { BudgetCategory, Expense, MonthlyBudgetData } from "../types";
 import { DEFAULT_CATEGORY_SEED } from "../constants";
 import {
   copyBudgetFrom,
+  createMonthWithCategories,
   createSeededMonth,
   findPreviousMonthWithData,
   hasAnyMonthData,
@@ -101,6 +102,37 @@ describe("createSeededMonth", () => {
   it("항목마다 다른 id를 발급한다", () => {
     const ids = createSeededMonth("2026-07").categories.map((c) => c.id);
     expect(new Set(ids).size).toBe(ids.length);
+  });
+});
+
+describe("createMonthWithCategories", () => {
+  const created = createMonthWithCategories(
+    "2026-07",
+    [
+      { name: "식비", budget: 400000, targetAmountPerUse: 12000 },
+      { name: "교통", budget: 80000 },
+    ],
+    idSeq(),
+  );
+
+  it("입력 순서대로 sortOrder를 0부터 부여한다", () => {
+    expect(created.categories.map((c) => [c.name, c.sortOrder])).toEqual([
+      ["식비", 0],
+      ["교통", 1],
+    ]);
+  });
+
+  it("항목마다 다른 id를 발급하고 지출은 비어 있다", () => {
+    expect(created.categories.map((c) => c.id)).toEqual(["id1", "id2"]);
+    expect(created.expenses).toEqual([]);
+  });
+
+  it("직접 만든 항목이라 seedKey가 없다", () => {
+    expect(created.categories.every((c) => c.seedKey === undefined)).toBe(true);
+  });
+
+  it("항목이 없으면 빈 달이 된다", () => {
+    expect(createMonthWithCategories("2026-07", []).categories).toEqual([]);
   });
 });
 

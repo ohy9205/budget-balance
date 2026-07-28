@@ -6,9 +6,9 @@
  * id를 넣기 위한 것이다.
  */
 
-import type { BudgetCategory, MonthlyBudgetData } from "../types";
+import type { BudgetCategory, MonthlyBudgetData, NewCategoryInput } from "../types";
 import { DEFAULT_CATEGORY_SEED } from "../constants";
-import { sortByOrder } from "./category";
+import { createCategory, sortByOrder } from "./category";
 import { newId } from "./id";
 
 /**
@@ -54,6 +54,19 @@ export function createSeededMonth(
     })),
     expenses: [],
   };
+}
+
+/** 주어진 항목들로 새 월 데이터 생성 (최초 설정 결과를 저장할 때 쓴다) */
+export function createMonthWithCategories(
+  month: string,
+  inputs: NewCategoryInput[],
+  nextId: () => string = newId,
+): MonthlyBudgetData {
+  const categories = inputs.reduce<BudgetCategory[]>(
+    (acc, input) => [...acc, createCategory(input, acc, nextId())],
+    [],
+  );
+  return { month, categories, expenses: [] };
 }
 
 /**

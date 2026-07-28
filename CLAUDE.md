@@ -89,7 +89,7 @@ There is no lint script and no ESLint config (the lone `eslint-disable` comment 
 [BudgetContext.tsx](src/context/BudgetContext.tsx) is vestigial). `npm run build` — tsc with
 `strict`, `noUnusedLocals`, `noUnusedParameters` — is the only static check.
 
-The suite is six files under [src/lib/](src/lib/) (150 tests) running with `environment: "node"`:
+The suite is six files under [src/lib/](src/lib/) (162 tests) running with `environment: "node"`:
 [calculations.test.ts](src/lib/calculations.test.ts) (also covers `format.ts` / `date.ts`),
 [category.test.ts](src/lib/category.test.ts), [expense.test.ts](src/lib/expense.test.ts),
 [month.test.ts](src/lib/month.test.ts), [onboarding.test.ts](src/lib/onboarding.test.ts),
@@ -115,7 +115,9 @@ Three layers, deliberately separated:
    purity (random), so functions that need ids take them as arguments — either a single
    `id`/`createdAt` (`createExpense`, `createCategory`) or an injectable `nextId: () => string`
    defaulting to `newId` (`createSeededMonth`, `copyBudgetFrom`). Tests pass a counter.
-   `onboarding.ts`는 최초 설정 입력 검증만 담당한다. Domain input types (`NewExpenseInput`,
+   `onboarding.ts`는 최초 설정 전용이다 — 입력 검증(`buildOnboardingPlan`)과 입력 중인 목록의
+   전이(`toggleDraftCategory`, `canAddDraftCategory`, `updateDraftCategory`, `draftTotalBudget`).
+   초안 항목은 아직 id가 없어 **이름이 곧 식별자**다. Domain input types (`NewExpenseInput`,
    `NewCategoryInput`) live in `types.ts`, **not** in the context file — components import types from
    here and only `useBudget`/`BudgetProvider` from layer 2. **Logic a component needs but React does
    not belongs here, not in the component** — e.g. `resolveInitialCategoryId`,
@@ -128,8 +130,12 @@ Three layers, deliberately separated:
    **The provider owns no domain rules** — each action is a `setStore`/`mutateMonth` wrapper around a
    pure transition in layer 1 (`createExpense`, `applyExpenseInput`, `createCategory`,
    `moveCategoryToIndex`, `findPreviousMonthWithData`, `removeMonth`, `createSeededMonth`,
-   `copyBudgetFrom`, `addMonth`). New behaviour goes in the pure function with a test, not inline
-   here.
+   `createMonthWithCategories`, `copyBudgetFrom`, `addMonth`). New behaviour goes in the pure
+   function with a test, not inline here.
+
+   [OnboardingContext.tsx](src/context/OnboardingContext.tsx)는 최초 설정 3화면이 공유하는 초안만
+   들고 있다. **`/onboarding` 라우트 안에서만 살아 있고 저장소에는 아무것도 쓰지 않는다** —
+   저장은 마지막 화면의 `startMonthWithCategories` 한 번뿐이다.
    `moveCategoryToIndex` returns **the same array reference** when the move is a no-op (unknown id,
    or an index that clamps back to where it already is), and `reorderCategory` relies on that to
    leave state untouched — don't "simplify" it into always copying.
@@ -166,6 +172,9 @@ Three layers, deliberately separated:
   category's expenses, and `sanitizeExpense` silently drops any expense whose `categoryId` isn't in
   the same month's sanitized category list. Adding a category-less expense path would lose data on
   the next load.
+- **`DEFAULT_CATEGORY_SEED`는 최초 설정의 추천 항목 9개이자, 예산을 직접 넣지 않고 만든 달의
+  기본값이다.** 최초 설정을 거쳐 만든 항목은 `createCategory`를 타므로 **`seedKey`가 붙지 않고**,
+  이름이 시드와 같으면 다음 로드에서 `sanitizeCategory`가 되붙인다(아래 참고).
 - **`category.seedKey` points back at `DEFAULT_CATEGORY_SEED`.** Categories created from the seed
   (and copies of them in later months) keep the seed's `key`, so the row can be traced back to
   [constants.ts](src/constants.ts) even after the name was edited. Manually added categories have no
@@ -292,6 +301,10 @@ v1은 `monthlyBudget`/`targetExpenseAmount`/`date`/`paymentMethod` 시절 키다
 - 항목 메뉴는 TDS `Menu.Dropdown`을 **`Menu.Trigger` 없이 단독으로** 쓴다(단독 렌더 확인함).
   `Menu.Trigger`의 dim이 드래그 중 포인터를 가로채기 때문이며, 열림 상태와 위치는 직접 관리한다.
   `Menu.DropdownItem`은 `role="menuitem"`·`tabindex`를 스스로 넣으므로 덧붙이지 않는다.
+- **최초 설정은 `/onboarding` 아래 3화면이다** — 항목 선택 → 항목별 예산 → 최종 확인. 앞 화면을
+  건너뛰고 들어오면(새로고침 등) 초안이 비어 있으므로 각 화면이 `<Navigate>`로 첫 화면에
+  되돌린다. **저장은 마지막 화면의 "이대로 시작하기" 한 번뿐**이고, 그 전까지는 저장소에 아무것도
+  쓰지 않는다.
 - 설정은 오버레이가 아니라 라우트다([SettingsPage.tsx](src/pages/SettingsPage.tsx), `/settings`).
   하는 일은 상단바와 "이번 달 데이터 초기화" 확인 하나뿐이다 — 항목 관련 UI는 여기 두지 않는다.
   카드 없는 단색 화면이라 `.settings-page`가 셸의 회색 바닥을 흰색으로 덮는다.

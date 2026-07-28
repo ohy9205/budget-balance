@@ -72,7 +72,7 @@ budget-balance/
    ├─ main.tsx                     # 진입점 — TDS provider + BudgetProvider + HashRouter
    ├─ App.tsx                      # 라우트 정의 + 진입 게이트
    ├─ types.ts                     # 도메인 타입 + 입력 타입
-   ├─ constants.ts                 # 기본 예산 항목 7개, 결제수단, 상태 임계값, 저장 키
+   ├─ constants.ts                 # 추천 예산 항목 9개, 상태 임계값, 저장 키
    ├─ index.css                    # 레이아웃 전용 (460px 컬럼, 간격, 흰 카드 면) — 색·타이포는 TDS
    ├─ context/
    │  └─ BudgetContext.tsx         # 상태 보관 + 영속화. 도메인 규칙은 갖지 않는다

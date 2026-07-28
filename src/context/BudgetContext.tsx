@@ -13,6 +13,7 @@ import { applyExpenseInput, createExpense } from "../lib/expense";
 import { newId } from "../lib/id";
 import {
   copyBudgetFrom,
+  createMonthWithCategories,
   createSeededMonth,
   findPreviousMonthWithData,
   hasAnyMonthData,
@@ -35,6 +36,8 @@ export interface BudgetContextValue {
 
   createEmptyMonthFromSeed: () => void;
   copyFromPreviousMonth: () => void;
+  /** 최초 설정 결과를 현재 월에 한 번에 저장한다 */
+  startMonthWithCategories: (inputs: NewCategoryInput[]) => void;
 
   addExpense: (input: NewExpenseInput) => void;
   updateExpense: (id: string, input: NewExpenseInput) => void;
@@ -129,6 +132,19 @@ export function BudgetProvider({ children }: { children: ReactNode }) {
     });
   }
 
+  function startMonthWithCategories(inputs: NewCategoryInput[]) {
+    setStore((prev) => {
+      if (!prev || prev.months[currentMonth]) return prev;
+      return {
+        ...prev,
+        months: {
+          ...prev.months,
+          [currentMonth]: createMonthWithCategories(currentMonth, inputs),
+        },
+      };
+    });
+  }
+
   function addExpense(input: NewExpenseInput) {
     const expense = createExpense(input, newId(), new Date().toISOString());
     mutateMonth((data) => ({ ...data, expenses: [...data.expenses, expense] }));
@@ -197,6 +213,7 @@ export function BudgetProvider({ children }: { children: ReactNode }) {
     goToNextMonth,
     createEmptyMonthFromSeed,
     copyFromPreviousMonth,
+    startMonthWithCategories,
     addExpense,
     updateExpense,
     deleteExpense,
