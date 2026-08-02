@@ -60,7 +60,6 @@ export function SummaryCard({ data }: { data: MonthlyBudgetData }) {
           {/* 쓴 금액만 진하게, 라벨은 흐리게 */}
           <span className="summary-bar-used">
             <Paragraph typography="t7" color={adaptive.grey600}>
-              <Paragraph.Text>사용 </Paragraph.Text>
               <Paragraph.Text fontWeight="semibold" color={adaptive.grey800}>
                 {formatCurrency(summary.totalUsed)}
               </Paragraph.Text>
