@@ -6,10 +6,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ```bash
 npm run dev          # Vite dev server (http://localhost:5173)
-npm run build        # tsc -b (typecheck) + vite build
+npm run build        # tsc -b (typecheck) + vite build + ait build (→ budget-balance.ait)
 npm run preview      # serve the production build
 npm test             # vitest run (all tests)
 npm run test:watch   # vitest watch mode
+npm run deploy       # ait deploy — 빌드된 .ait를 앱인토스에 업로드
 ```
 
 ```bash
@@ -221,6 +222,24 @@ reload. Storage keys are versioned (`budget-balance:data:v1`, `budget-balance:pr
   [useSheetMaxHeight](src/hooks/useSheetMaxHeight.ts)도 지우지 말 것: `BottomSheet`의 `maxHeight`
   prop은 마운트 시점 값으로 굳어서 키보드가 올라와도 안 줄어들기 때문에 `visualViewport` 크기를
   `style`로 덮어써야 금액 입력이 키보드에 가리지 않는다.
+
+### 앱인토스 배포
+
+`@apps-in-toss/web-framework` **3.x**를 쓴다(2.x는 `granite.config.ts`였고, 3.x는
+`apps-in-toss.config.ts`다 — 2.x 예제를 섞지 말 것). 설정은
+[apps-in-toss.config.ts](apps-in-toss.config.ts) 하나뿐이고, `tsconfig.node.json`의 `include`에
+들어 있어 `tsc -b`가 같이 타입체크한다.
+
+- **`appName: "budget-balance"`는 콘솔 등록값이라 바꿀 수 없다.** 딥링크(`intoss://budget-balance`)와
+  `.ait` 파일명, CORS 도메인(`https://budget-balance.web.tossmini.com`)이 전부 여기서 나온다.
+- `webBundleDir: "dist"`는 Vite의 출력 디렉터리와 묶여 있다 — 한쪽만 바꾸면 `ait build`가 빈 번들을
+  만든다.
+- `permissions: []` — 저장소가 `localStorage`뿐이라 네이티브 권한이 필요 없다. 카메라·위치 등을
+  쓰게 되면 여기 먼저 추가해야 한다.
+- `brand.primaryColor`는 `TDSMobileAITProvider`가 토스 앱 밖에서 떨어지는 기본값(blue500)과 맞춰 둔
+  값이다.
+- 산출물 `budget-balance.ait`는 `.gitignore` 대상이다(커밋하지 않는다).
+- SDK 3.x 번들을 한 번 출시하면 **2.x로 롤백할 수 없다** — QR 테스트를 마치고 출시할 것.
 
 ### README
 
